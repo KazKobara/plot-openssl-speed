@@ -1,0 +1,9 @@
+tmp/
+trash/
+# Emacs auto save files
+*~
+\#*#
+.~lock.*#
+
+
+
