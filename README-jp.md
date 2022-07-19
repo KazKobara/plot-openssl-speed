@@ -81,13 +81,16 @@ Results are in:
 
 グラフ画像の一覧は、例えば、ファイルエクスプローラの場合、以下のように「表示」タブで「特大アイコン」を選択し、「グループ化」で「種類」を選択すると表示させることができます。
 
-![Explore Menu](./figs/explore_menu.png)
+![Explore Menu](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/explore_menu.png)
+<!-- ![Explore Menu](./figs/explore_menu.png) -->
 
 格納されたグラフ画像一覧の例(PATH上の openssl 1.1.1f):
-![グラフ画像](./figs/all_graphs_1_1_1f.png)
+![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_1_1_1f.png)
+<!-- ![graphs](./figs/all_graphs_1_1_1f.png) -->
 
 格納されたグラフ画像一覧の例(PATH上の LibreSSL 2.8.3):
-![graphs](./figs/all_graphs_libressl_2_8_3.png)
+![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_libressl_2_8_3.png)
+<!-- ![graphs](./figs/all_graphs_libressl_2_8_3.png) -->
 
 ## 指定したバージョン(tag)をコンパイルし得たopensslコマンドの測定結果を描画する場合
 
@@ -106,7 +109,8 @@ bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1q openssl-3.0.5 OpenSSL_1
 > tagの後ろに`-mingw`を付けることで Windowsバイナリ openssl.exe が make され、WSL上ではその測定結果のグラフ画像も保存されます。WSL以外では Windowsバイナリ実行環境も構築する必要があります。
 
 格納されたグラフ画像一覧の例(ソースからコンパイルした openssl-3.0.5):
-![openssl-3.0.5](./figs/all_graphs_3_0_5.png)
+![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_3_0_5.png)
+<!-- ![graphs](./figs/all_graphs_3_0_5.png) -->
 
 ## グラフから読み取れることと補足
 
@@ -120,20 +124,34 @@ bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1q openssl-3.0.5 OpenSSL_1
 
 RSA:
 
-<img src="./figs/rsa.png" width="300" alt="RSA" title="RSA"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/rsa.png" width="300" alt="RSA" title="RSA"/>
+<!-- <img src="./figs/rsa.png" width="300" alt="RSA" title="RSA"/> -->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/rsa_sign_fit.png" width="300" alt="RSA" title="RSA"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/rsa_verify_fit.png" width="300" alt="RSA" title="RSA"/>
+
+<!--
 <img src="./figs/rsa_sign_fit.png" width="300" alt="RSA" title="RSA"/>
 <img src="./figs/rsa_verify_fit.png" width="300" alt="RSA" title="RSA"/>
+-->
 
 2の拡大体上のECDH:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_b.png" width="300" alt="ecdh_b" title="ecdh_b"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_b_fit.png" width="300" alt="ecdh_b" title="ecdh_b"/>
+<!--
 <img src="./figs/ecdh_b.png" width="300" alt="ecdh_b" title="ecdh_b"/>
 <img src="./figs/ecdh_b_fit.png" width="300" alt="ecdh_b" title="ecdh_b"/>
+-->
 
 素体上のECDH(brainpool):
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_brp_r1.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_brp_r1_fit.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
+<!--
 <img src="./figs/ecdh_brp_r1.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
 <img src="./figs/ecdh_brp_r1_fit.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
+-->
 
 いずれの図からも、サイズが大きくなるにつれ処理速度が遅くなることを確認できます。
 
@@ -141,22 +159,28 @@ RSA:
 
 ECDSA/ECDH(素体上のNISTカーブ, OpenSSL 3.0.5):
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdsa_p.png" width="300" alt="ecdsa_p" title="ecdsa_p"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
+<!--
 <img src="./figs/ecdsa_p.png" width="300" alt="ecdsa_p" title="ecdsa_p"/>
 <img src="./figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
+-->
 
 ECDSA(素体上のNISTカーブ, LibreSSL 2.8.3):
 
-<img src="./figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/>
+<!-- <img src="./figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/> -->
 
 特に OpenSSL において、
-256bitの処理速度が192bitや224bitより各段に速くなっているのが分かります。
-これは256bitの素体上の楕円曲線上の演算のみが理論上特別に速くなるという訳ではなく、アセンブリ実装などのチューニングが行われていることを意味します。
+256-bitの処理速度が192-bitや224-bitより各段に速くなっているのが分かります。
+これは256-bitの素体上の楕円曲線上の演算のみが理論上特別に速くなるという訳ではなく、アセンブリ実装などのチューニングが行われていることを意味します。
 参考までに、`./config` に `-UECP_NISTZ256_ASM` を付けてアセンブリ実装を無効にしてコンパイルし直すと各段に速くなっていた利点は失われます。
-(将来的には384bitや521bitなどの処理速度も、必要に応じてチューニングされるのではないかと思います。)
+(将来的には384-bitや521-bitなどの処理速度も、必要に応じてチューニングされるのではないかと思います。)
 
 ### ハッシュ関数SHA/SHS
 
-<img src="./figs/hash.png" width="600" alt="hash" title="hash"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/hash.png" width="600" alt="hash" title="hash"/>
+<!-- <img src="./figs/hash.png" width="600" alt="hash" title="hash"/> -->
 
 APIの差:
 
@@ -182,20 +206,22 @@ SHA-3:
 
 ### 共通鍵暗号と暗号利用モード
 
-<img src="./figs/cipher128-256.png" width="600" alt="cipher128-256" title="cipher128-256"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/cipher128-256.png" width="600" alt="cipher128-256" title="cipher128-256"/>
+<!-- <img src="./figs/cipher128-256.png" width="600" alt="cipher128-256" title="cipher128-256"/> -->
 
 理論的には、
 
 * `AES-*-CTR` に改ざん検出機能を追加したのが `AES-*-GCM` と `AES-*-CCM` ですので、それらの処理速度は同じ鍵長の `AES-*-CTR` より遅くなります。
 * さらに、`AES-*-CCM` は、改ざん検出に上記グラフ画像一覧左上の `AES-*-CBC` のようなアルゴリズムを用いますので、`AES-*-CBC` より遅くなります。
-* 256bit AESの段数は14段で128bit AESは10段ですので、`AES-128-*`の処理速度は`AES-256-*`のおおよそ1.4倍になります。
+* 256-bit AESの段数は14段で128-bit AESは10段ですので、`AES-128-*`の処理速度は`AES-256-*`のおおよそ1.4倍になります。
 * ちなみに、様々な環境での `aes-128-ctr` `aes-128-gcm` `chacha20-poly1305` の処理速度が[こちら][vol]で集められております。
 
 例外:
 
-* 下図のとおり、LibreSSL (少なくとも 2.8.3) では、入力サイズの大きな `aes-128-gcm` の処理速度が格段に大きくなります。
+* 下図のとおり、LibreSSL (少なくとも 2.8.3) では、入力サイズの大きな `aes-128-gcm` の処理速度が格段に大きくなっています。
 
-<img src="./figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/>
+<!-- <img src="./figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/> -->
 
 ### OpenSSL 1 と 3 とでの主要な違い
 

@@ -73,23 +73,23 @@ Results are in:
 ```
 
 Example of graph list (openssl 1.1.1f in PATH):
-![graphs](./figs/all_graphs_1_1_1f.png)
+![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_1_1_1f.png)
 
 Example of graph list (LibreSSL 2.8.3 in PATH):
-![graphs](./figs/all_graphs_libressl_2_8_3.png)
+![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_libressl_2_8_3.png)
 
 ## Plot speed of openssl's obtained from source code
 
 The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.5`, and openssl.exe command cross-compiled by MinGW (x86_64-w64-mingw32-gcc):
 
 ```bash
-bash -c "./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw"
+./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw
 ```
 
 > By adding `-mingw` after the tag-name, openssl.exe is cross-compiled by Mingw-w64, and then the results are added on WSL. On the other computational environment, Windows binary executable environment is needed.
 
 Example of graph list (openssl-3.0.5 from source):
-![openssl-3.0.5](./figs/all_graphs_3_0_5.png)
+![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_3_0_5.png)
 
 ## What graphs show
 
@@ -106,40 +106,40 @@ The parameter `a` in the line graphs denotes the reduction rate of the processin
 
 RSA:
 
-<img src="./figs/rsa.png" width="300" alt="RSA" title="RSA"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/rsa.png" width="300" alt="RSA" title="RSA"/>
 
-<img src="./figs/rsa_sign_fit.png" width="300" alt="RSA" title="RSA"/>
-<img src="./figs/rsa_verify_fit.png" width="300" alt="RSA" title="RSA"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/rsa_sign_fit.png" width="300" alt="RSA" title="RSA"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/rsa_verify_fit.png" width="300" alt="RSA" title="RSA"/>
 
 ECDH (NIST curve over an extension field of Z2):
 
-<img src="./figs/ecdh_b.png" width="300" alt="ecdh_b" title="ecdh_b"/>
-<img src="./figs/ecdh_b_fit.png" width="300" alt="ecdh_b" title="ecdh_b"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_b.png" width="300" alt="ecdh_b" title="ecdh_b"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_b_fit.png" width="300" alt="ecdh_b" title="ecdh_b"/>
 
 ECDH (Brainpool r1 over a prime field):
 
-<img src="./figs/ecdh_brp_r1.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
-<img src="./figs/ecdh_brp_r1_fit.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_brp_r1.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_brp_r1_fit.png" width="300" alt="ecdh_brp" title="ecdh_brp"/>
 
 The next figures show the counter examples.
 
 ECDSA/ECDH (NIST curve over a prime field, OpenSSL 3.0.5):
 
-<img src="./figs/ecdsa_p.png" width="300" alt="ecdsa_p" title="ecdsa_p"/>
-<img src="./figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdsa_p.png" width="300" alt="ecdsa_p" title="ecdsa_p"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
 
 ECDSA (NIST curve over a prime field, LibreSSL 2.8.3):
 
-<img src="./figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/>
 
-256bit is by far faster than the smaller sizes 192bit and 224bit, especially for OpenSSL.
-It does not mean that 256bit is exceptional in theory,
+256-bit is by far faster than the smaller sizes 192-bit and 224-bit, especially for OpenSSL.
+It does not mean that 256-bit is exceptional in theory,
 but the assembly implementation has tuned it up, since adding `./config` to `-UECP_NISTZ256_ASM` will remove this advantage.
-(The processing speed of 384bit and 521bit may also be improved in the future depending on the necessity, I think.)
+(The processing speed of 384-bit and 521-bit may also be improved in the future depending on the necessity, I think.)
 
 ### Hash function SHA/SHS
 
-<img src="./figs/hash.png" width="600" alt="hash" title="hash"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/hash.png" width="600" alt="hash" title="hash"/>
 
 API difference:
 
@@ -155,7 +155,7 @@ Comparison among truncated versions:
 Comparison between `sha256` and `sha512`:
 
 * The speed for 16 bytes, or more generally 512-1-64 bits (or 55 bytes) or less, shows the speed of one compression function in both `sha256` and `sha512`. Hence, the figure indicates that one `sha256` compression function is faster than that of `sha512`.
-* For more bytes, `sha512` is faster than `sha256` since the number of `sha512` compression-function executions is around half of `sha256` where the input bit length of `sha256` and `sha512`compression functions are 512 bits and 1024 bits, respectively.
+* For more bytes, `sha512` is faster than `sha256` since the number of `sha512` compression-function executions is around half of `sha256` where the input bit length of `sha256` and `sha512`compression functions are 512-bits and 1024-bits, respectively.
 
 SHA-3:
 
@@ -164,7 +164,7 @@ SHA-3:
 
 ### Symmetric-key cryptosystems and their modes of operation
 
-<img src="./figs/cipher128-256.png" width="600" alt="cipher128-256" title="cipher128-256"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/cipher128-256.png" width="600" alt="cipher128-256" title="cipher128-256"/>
 
 In theory:
 
@@ -176,7 +176,7 @@ Counter example:
 
 * As shown below, for large inputs, `aes-128-gcm` of LibreSSL (at least 2.8.3) is by far faster than the others.
 
-<img src="./figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/>
 
 ### Differences between OpenSSL 1 and 3
 
