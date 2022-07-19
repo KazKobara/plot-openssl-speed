@@ -50,9 +50,17 @@ for proc in "${fit_array[@]}"; do
     esac
     echo
     echo "--- ${IN_FILE} ---> ${FIT_FILE} ---"
+    if [ ! -e "${IN_FILE}" ]; then
+        echo "Warning: no ${IN_FILE}, skipped!"
+        continue
+    fi
+    B_INIT=$(awk "(! /#/) && (NR==1) {print ${POS}}" "${IN_FILE}")
+    if [ "${B_INIT}" == "" ]; then
+        echo "Warning: ${IN_FILE} does not contain a table, skipped!"
+        continue
+    fi
     awk "{print substr(\$1,${SUBSTR_START}${SUBSTR_LEN}), ${POS} }" "${IN_FILE}" > "${FIT_FILE}"
-    B_INIT=$(awk "NR==1 {print ${POS}}" "${IN_FILE}");
-    LOGX_OFFSET=$(awk 'NR==1 {print $1}' "${FIT_FILE}");
+    LOGX_OFFSET=$(awk 'NR==1 {print $1}' "${FIT_FILE}")
     #   set grid; \
     gnuplot -p -e "set terminal png; set output \"${proc}_fit.png\"; \
         set ylabel 'Speed [operations/s]'; \

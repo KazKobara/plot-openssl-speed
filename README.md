@@ -2,15 +2,6 @@
 
 [日本語 <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/jp.svg" width="20" alt="Japanese" title="Japanese"/>](./README-jp.md)
 
-## Environment
-
-* bash terminal
-  * To change to bash on macOS:
-
-    ```zsh
-    chsh -s /bin/bash
-    ```
-
 ## Preparation
 
 1. Install necessary commands:
@@ -24,26 +15,51 @@
         > * `make gcc` are needed if you `make` openssl commands from the source code.
         > * `gcc-mingw-w64-x86-64` is needed if you make openssl.exe with MinGW.
 
-1. Script download and setting:
+    * On macOS
+      1. Command Line Tools by entering on a terminal a command it provides, such as
+
+          ```zsh
+          gcc
+          ```
+
+      1. [Homebrew](https://brew.sh/), then
+
+          ```zsh
+          brew install gnuplot coreutils
+          ```
+
+          > * `coreutils` is needed to use `realpath` command.
+
+      1. Chang the shell to Bash
+
+          ```zsh
+          chsh -s /bin/bash
+          ```
+
+1. Download scripts:
 
     ```bash
     git clone https://github.com/KazKobara/plot_openssl_speed.git
+    cd plot_openssl_speed
     ```
 
+1. Help and usage:
+
     ```bash
-    cd plot_openssl_speed
-    chmod 500 ./plot_openssl_speed.sh 
+    ./plot_openssl_speed_all.sh -h
     ```
 
 ## Plot `openssl speed` with openssl command in PATH
 
 ```bash
-bash -c "./plot_openssl_speed_all.sh -s 1"
+./plot_openssl_speed_all.sh -s 1
 ```
 
-> The option '`-s 1`' is to set the measuring time to 1 second to speed up and grab the rough trend. Remove it for accurate measurements. (The following graphs are obtained without '`-s 1`'.)
+> * The option '`-s 1`' is to set the measuring time to 1 second to speed up and grab the rough trend. Remove it for accurate measurements.
+> * The following graphs are obtained without '`-s 1`'.
+> * The script ignores '`-s 1`' against LibreSSL since its `openssl speed` does not support `-seconds` option and causes an error at least at 2.8.3.
 
-The measuring results, graph files `*.png` and their data files `*.dat`, are stored in the directories displayed at the end of the output message as follows:
+The measurement results (graph files `*.png` and their data files `*.dat`) are stored in the directories displayed at the end of the output message as follows:
 
 ```text
 Results are in:
@@ -59,17 +75,20 @@ Results are in:
 Example of graph list (openssl 1.1.1f in PATH):
 ![graphs](./figs/all_graphs_1_1_1f.png)
 
+Example of graph list (LibreSSL 2.8.3 in PATH):
+![graphs](./figs/all_graphs_libressl_2_8_3.png)
+
 ## Plot speed of openssl's obtained from source code
 
-The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.5` (and openssl.exe command cross-compiled for 64bit MinGW on WSL):
+The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.5`, and openssl.exe command cross-compiled by MinGW (x86_64-w64-mingw32-gcc):
 
 ```bash
 bash -c "./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw"
 ```
 
-> By adding `-mingw` after the tag-name, openssl.exe is cross-compiled for 64bit MinGW, and then the results are also added on WSL.
+> By adding `-mingw` after the tag-name, openssl.exe is cross-compiled by Mingw-w64, and then the results are added on WSL. On the other computational environment, Windows binary executable environment is needed.
 
-Example of graph list (openssl-3.0.5):
+Example of graph list (openssl-3.0.5 from source):
 ![openssl-3.0.5](./figs/all_graphs_3_0_5.png)
 
 ## What graphs show
@@ -104,12 +123,16 @@ ECDH (Brainpool r1 over a prime field):
 
 The next figures show the counter examples.
 
-ECDH/ECDSA (NIST curve over a prime field):
+ECDSA/ECDH (NIST curve over a prime field, OpenSSL 3.0.5):
 
-<img src="./figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
 <img src="./figs/ecdsa_p.png" width="300" alt="ecdsa_p" title="ecdsa_p"/>
+<img src="./figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
 
-256bit is by far faster than the smaller sizes 192bit and 224bit.
+ECDSA (NIST curve over a prime field, LibreSSL 2.8.3):
+
+<img src="./figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/>
+
+256bit is by far faster than the smaller sizes 192bit and 224bit, especially for OpenSSL.
 It does not mean that 256bit is exceptional in theory,
 but the assembly implementation has tuned it up, since adding `./config` to `-UECP_NISTZ256_ASM` will remove this advantage.
 (The processing speed of 384bit and 521bit may also be improved in the future depending on the necessity, I think.)
@@ -148,6 +171,12 @@ In theory:
 * Both `AES-*-GCM` and `AES-*-CCM` must be slower than the same key-length `AES-*-CTR` since they are `AES-*-CTR` with their integrity check.
 * `AES-*-CCM` must also be slower than `AES-*-CBC`, which is shown in the upper left corner in the above graph list, since the integrity check of `AES-*-CCM` uses the similar algorithm to `AES-*-CBC`.
 * `AES-128-*` must be around 1.4 times faster than `AES-256-*` since the number of their rounds are 10 and 14, respectively.
+
+Counter example:
+
+* As shown below, for large inputs, `aes-128-gcm` of LibreSSL (at least 2.8.3) is by far faster than the others.
+
+<img src="./figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/>
 
 ### Differences between OpenSSL 1 and 3
 
@@ -295,6 +324,8 @@ ecdh(nistp256)  0.0000s  20643.0
 
 ## Computational Environment
 
+### WSL2 Ubuntu
+
 ```console
 $ cat /etc/os-release  | awk '/^PRETTY/ {print substr($0,13)}'
 
@@ -344,6 +375,32 @@ $ gnuplot -V
 gnuplot 5.2 patchlevel 8
 ```
 
+### macOS
+
+```console
+$ uname -srm
+
+Darwin 21.5.0 x86_64
+```
+
+```console
+$ sysctl machdep.cpu.brand_string
+
+machdep.cpu.brand_string: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz
+```
+
+```console
+$ openssl version -a
+
+LibreSSL 2.8.3
+options:  bn(64,64) rc4(16x,int) des(idx,cisc,16,int) blowfish(idx) 
+```
+
+```console
+$ gnuplot -V
+gnuplot 5.4 patchlevel 3
+```
+
 ## Troubleshooting
 
 ### libssp-0.dll is missing
@@ -358,7 +415,12 @@ cp -p  "/usr/lib/gcc/x86_64-w64-mingw32/${MINGW_GCC_VER}-posix/libssp-0.dll" .
 exit
 ```
 
-## link
+### Error: bad option or value
+
+Change the options and/or crypt-algorithms given to `openssl speed`.
+Some versions of openssl commands do not support them.
+
+## Link
 
 * [[kec17]] [TeamKeccak "Is SHA-3 slow?"][kec17], 2017.6
 

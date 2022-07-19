@@ -1,9 +1,10 @@
 tmp/
 trash/
+graph.png
+graph.dat
 # Emacs auto save files
 *~
 \#*#
 .~lock.*#
-
-
-
+# macOS
+.DS_Store

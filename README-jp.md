@@ -5,15 +5,6 @@
 [English](./README.md) <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/gb.svg" width="20" alt="English" title="English"/>
 -->
 
-## 実行環境
-
-* bash が使えるターミナル
-  * macOSのターミナルでは
-
-    ```zsh
-    chsh -s /bin/bash
-    ```
-
 ## 前準備
 
 1. 必要なコマンドのインストール
@@ -27,51 +18,83 @@
         > * `make gcc` は openssl をソースファイルから make する場合に必要
         > * `gcc-mingw-w64-x86-64` は MinGW で openssl.exe を作る場合に必要
 
-1. スクリプトのダウンロードと設定
+    * macOS の場合:
+      1. Command Line Tools のインストール
+
+          ターミナル上で Command Line Tools が提供しているコマンド(例えば以下など)を打ち込み、指示に従う。
+
+          ```zsh
+          gcc
+          ```
+
+      1. [Homebrew](https://brew.sh/)をインストールし、以下を実行
+
+          ```zsh
+          brew install gnuplot coreutils mingw-w64
+          ```
+
+          > * `coreutils` は `realpath` コマンドをインストールするために必要
+          > * `mingw-w64` は MinGW で openssl.exe を作る場合に必要
+
+      1. シェルを Bash に変更
+
+          ```zsh
+          chsh -s /bin/bash
+          ```
+
+1. スクリプトのダウンロードとフォルダへの移動
 
     ```bash
     git clone https://github.com/KazKobara/plot_openssl_speed.git
+    cd plot_openssl_speed
     ```
 
+1. ヘルプと使い方の表示
+
     ```bash
-    cd plot_openssl_speed
-    chmod 500 ./plot_openssl_speed.sh 
+    ./plot_openssl_speed_all.sh -h
     ```
 
 ## 実行PATH上のopensslコマンドの測定結果を描画する場合
 
 ```bash
-bash -c "./plot_openssl_speed_all.sh -s 1"
+./plot_openssl_speed_all.sh -s 1
 ```
 
-> オプションの `-s 1` は、各暗号アルゴリズムの測定時間を1秒に短縮するためのものです。全体の傾向をつかめ、バラツキの小さな計測を行う際には指定せずご実行下さい。(以下の図は指定せずに実行した結果になります。)
+> * オプションの `-s 1` は、各暗号アルゴリズムの測定時間を1秒に短縮するためのものです。
+>   * 全体の傾向をつかめ、バラツキの小さな計測を行う際には指定せずご実行下さい。
+>   * 以下の図は指定せずに実行した結果になります。
+> * LibreSSL に対しては、(少なくとも 2.8.3 の時点においては) `openssl speed` コマンドが `-seconds` オプションを有しておらずエラーとなるため指定しても無視されます。
 
-上記コマンドを実行すると表示メッセージの最後に、グラフ画像ファイルやその元になったデータファイルなどが格納されたフォルダの情報が以下のように表示されます。
+上記コマンドを実行すると、以下のように表示メッセージの最後に、グラフ画像ファイルやその元になったデータファイルなどが格納されたフォルダ情報が表示されます。
 
 ```text
 Results are in:
   ./tmp/default_openssl_1.1.1f/graphs/
 ```
 
-> WSL (Windows Subsystem for Linux) を使用している場合、 その `Ubuntu-20.04` の `/home/` ディレクトリへは Windows OS のファイルエクスプローラから、以下のアドレスで移動できます。
+> WSL (Windows Subsystem for Linux) を使用している場合、例えば `Ubuntu-20.04` の `/home/` ディレクトリへは Windows OS のファイルエクスプローラから、以下のアドレスで移動できます。
 
 ```text
 \\wsl$\Ubuntu-20.04\home\
 ```
 
-Windows エクスプローラの場合、以下のように「表示」タブで「特大アイコン」を選択し、「グループ化」で「種類」を選択するとグラフの一覧を表示させることができます。
+グラフ画像の一覧は、例えば、ファイルエクスプローラの場合、以下のように「表示」タブで「特大アイコン」を選択し、「グループ化」で「種類」を選択すると表示させることができます。
 
 ![Explore Menu](./figs/explore_menu.png)
 
 格納されたグラフ画像一覧の例(PATH上の openssl 1.1.1f):
 ![グラフ画像](./figs/all_graphs_1_1_1f.png)
 
-## 指定したバージョン(tag)を取得/コンパイルして得たopensslコマンドの測定結果を描画する場合
+格納されたグラフ画像一覧の例(PATH上の LibreSSL 2.8.3):
+![graphs](./figs/all_graphs_libressl_2_8_3.png)
 
-例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.5` を指定し、また、それらを64bit MinGW 用にクロスコンパイルした `openssl.exe` での測定結果も図示する場合。
+## 指定したバージョン(tag)をコンパイルし得たopensslコマンドの測定結果を描画する場合
+
+例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.5` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの測定結果と、それを MinGW (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での測定結果も図示する場合。
 
 ```bash
-bash -c "./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw"
+./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw
 ```
 
 <!--
@@ -80,9 +103,9 @@ bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1q openssl-3.0.5 OpenSSL_1
 ```
 -->
 
-> tagの後ろに`-mingw`を付けると 64bit MinGW 用の openssl.exe が make され、WSL上ではその測定結果のグラフ画像も保存されます。
+> tagの後ろに`-mingw`を付けることで Windowsバイナリ openssl.exe が make され、WSL上ではその測定結果のグラフ画像も保存されます。WSL以外では Windowsバイナリ実行環境も構築する必要があります。
 
-格納されたグラフ画像一覧の例(openssl-3.0.5):
+格納されたグラフ画像一覧の例(ソースからコンパイルした openssl-3.0.5):
 ![openssl-3.0.5](./figs/all_graphs_3_0_5.png)
 
 ## グラフから読み取れることと補足
@@ -116,11 +139,16 @@ RSA:
 
 次に、この傾向から外れている例を示します。
 
-ECDH/ECDSA(素体上のNISTカーブ):
+ECDSA/ECDH(素体上のNISTカーブ, OpenSSL 3.0.5):
 
-<img src="./figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
 <img src="./figs/ecdsa_p.png" width="300" alt="ecdsa_p" title="ecdsa_p"/>
+<img src="./figs/ecdh_p.png" width="300" alt="ecdh_p" title="ecdh_p"/>
 
+ECDSA(素体上のNISTカーブ, LibreSSL 2.8.3):
+
+<img src="./figs/ecdsa_p_libre.png" width="300" alt="ecdsa_p_libre" title="ecdsa_p_libre"/>
+
+特に OpenSSL において、
 256bitの処理速度が192bitや224bitより各段に速くなっているのが分かります。
 これは256bitの素体上の楕円曲線上の演算のみが理論上特別に速くなるという訳ではなく、アセンブリ実装などのチューニングが行われていることを意味します。
 参考までに、`./config` に `-UECP_NISTZ256_ASM` を付けてアセンブリ実装を無効にしてコンパイルし直すと各段に速くなっていた利点は失われます。
@@ -162,6 +190,12 @@ SHA-3:
 * さらに、`AES-*-CCM` は、改ざん検出に上記グラフ画像一覧左上の `AES-*-CBC` のようなアルゴリズムを用いますので、`AES-*-CBC` より遅くなります。
 * 256bit AESの段数は14段で128bit AESは10段ですので、`AES-128-*`の処理速度は`AES-256-*`のおおよそ1.4倍になります。
 * ちなみに、様々な環境での `aes-128-ctr` `aes-128-gcm` `chacha20-poly1305` の処理速度が[こちら][vol]で集められております。
+
+例外:
+
+* 下図のとおり、LibreSSL (少なくとも 2.8.3) では、入力サイズの大きな `aes-128-gcm` の処理速度が格段に大きくなります。
+
+<img src="./figs/cipher128-256_libre.png" width="600" alt="cipher128-256_libre" title="cipher128-256_libre"/>
 
 ### OpenSSL 1 と 3 とでの主要な違い
 
@@ -205,8 +239,14 @@ ${PLOT_SCRIPT} -o "./${GRA_DIR}/ed_ecdsa.png" eddsa ecdsa
 なお、標準的なディレクトリに格納されていない共有ライブラリを使用する openssl 実行ファイルを -p オプションで指定する最には、以下のように `LD_LIBRARY_PATH` (macOSでは `DYLD_LIBRARY_PATH`)に openssl が参照する共有ライブラリのディレクトリを追加する必要があります。
 
 ```bash
+./plot_openssl_speed.sh -p "./tmp/openssl-3.0.5/apps/openssl" -o "./tmp/openssl-3.0.5/graphs/ed_ecdsa.png" eddsa ecdsa
+```
+
+<!--
+```bash
 (export LD_LIBRARY_PATH=./tmp/openssl-3.0.5${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; ./plot_openssl_speed.sh -p "./tmp/openssl-3.0.5/apps/openssl" -o "./tmp/openssl-3.0.5/graphs/ed_ecdsa.png" eddsa ecdsa)
 ```
+-->
 
 openssl が参照する共有ライブラリは `ldd` (macOSでは `otool -L`)コマンドで表示できます。
 
@@ -299,6 +339,8 @@ ecdh(nistp256)  0.0000s  20643.0
 
 ## 測定環境
 
+### WSL2 Ubuntu
+
 ```console
 $ cat /etc/os-release  | awk '/^PRETTY/ {print substr($0,13)}'
 
@@ -381,6 +423,32 @@ $ gnuplot -V
 gnuplot 5.2 patchlevel 8
 ```
 
+### macOS
+
+```console
+$ uname -srm
+
+Darwin 21.5.0 x86_64
+```
+
+```console
+$ sysctl machdep.cpu.brand_string
+
+machdep.cpu.brand_string: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz
+```
+
+```console
+$ openssl version -a
+
+LibreSSL 2.8.3
+options:  bn(64,64) rc4(16x,int) des(idx,cisc,16,int) blowfish(idx) 
+```
+
+```console
+$ gnuplot -V
+gnuplot 5.4 patchlevel 3
+```
+
 ## トラブルシューティング
 
 ### libssp-0.dll が見つからない
@@ -394,6 +462,11 @@ export MINGW_GCC_VER=$(/usr/bin/x86_64-w64-mingw32-gcc-posix --version | awk '/x
 cp -p  "/usr/lib/gcc/x86_64-w64-mingw32/${MINGW_GCC_VER}-posix/libssp-0.dll" .
 exit
 ```
+
+### "Error: bad option or value"と表示される
+
+`openssl speed` に渡すオプションや引数を変更してみてください。
+openssl コマンドの version により実装されていないオプションや暗号アルゴリズムが存在します。
 
 ## リンク
 

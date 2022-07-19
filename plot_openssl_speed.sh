@@ -26,21 +26,21 @@ usage () {
     echo
     echo "   options:"
     echo "     [-d data_file_to_graph]"
-    echo "                          Available only when no"
-    echo "                          crypt-algorithm is given"
-    echo "                          (default: ${DEFAULT_DAT_FILE})."
-    echo "     [-o filename.png]    Output png file name"
-    echo "                          (default: ${DEFAULT_GRA_FILE})."
-    echo "                          Its data file is overwritten to"
-    echo "                          the same_filename_as_png.dat"
-    echo "                          (default: ${DEFAULT_DAT_FILE})."
-    echo "     [-p path_to_openssl] Path to openssl command"
-    echo "                          (default: ${DEFAULT_OPENSSL})"
-    echo "                          Ignored when plotting from given data."
-    echo "     [-s seconds]         Seconds [1-99] to measure the speed."
-    echo "                          Set '1' to speed up for debug."
-    echo "                          Ignored when plotting from given data."
-    echo "     [-(h|?)]             Show this usage."
+    echo "         Available only when no crypt-algorithm is given"
+    echo "         (default: ${DEFAULT_DAT_FILE})."
+    echo "     [-o filename.png]"
+    echo "         Output png file name (default: ${DEFAULT_GRA_FILE})."
+    echo "         Its data file is overwritten to the" 
+    echo "         same_filename_as_png.dat (default: ${DEFAULT_DAT_FILE})."
+    echo "     [-p path_to_openssl]"
+    echo "         Path to openssl command (default: ${DEFAULT_OPENSSL})"
+    echo "         Ignored when plotting from given data."
+    echo "     [-s seconds]"
+    echo "         Seconds [1-99] to measure the speed. Set '1' to speed up"
+    echo "         for debug. Ignored when plotting from given data."
+    echo "         LibreSSL (at least 2.8.3) does not support this."
+    echo "     [-(h|?)]"
+    echo "         Show this usage."
     echo
     echo "   where:"
     echo "     'crypt-algorithms' can be found in the area" 
@@ -65,10 +65,16 @@ usage () {
 # @brief        Run `openssl speed` and save the results to ${DAT}.
 # @param[in]    list of algorithms
 # @param[out]   Write to ${DAT}
-# @param[out]   ${TABLE_TYPE}
 measure () {
     echo
     echo "----- Measuring the speed -----" 
+    if  [[ "${OPENSSL_VER}" != "OpenSSL 3."* ]] && \
+        [[ "${OPENSSL_VER}" != "OpenSSL 1."* ]] && \
+        [[ "${OPENSSL_VER}" != "LibreSSL"* ]]; then
+            echo "Warning: ${OPENSSL_VER} is not tested!"
+            echo "         Edit 'measure()' in '${COMMAND}' to adjust options"
+            echo "         for '${OPENSSL} speed'."
+    fi
     # Store each result in the ${LOG} file.
     # save only the last execution to see the openssl speed configurations.
     # local LOG=.${COMMAND%.*}.log
@@ -77,6 +83,9 @@ measure () {
     rm -f "${LOG}" "${DAT}"
 
     local NO_EVP="-no-evp"
+    # Final ${TABLE_TYPE} (and ${NUM_FIELD}) will be decidec by table_type().
+    # ${PRE_TABLE_TYPE} is to decide ${OPENSSL} options.
+    local PRE_TABLE_TYPE
     ((cou=0))
     for algo in "$@"; do
         echo
@@ -84,15 +93,16 @@ measure () {
         local CUR_TABLE_TYPE="kbytes"  # default
         local NO_EVP_NAME=""           # default
         local EVP_OPT=""               # default
-        if [[ "${OPENSSL_VER}" == "OpenSSL 1."* ]] || \
-           [[ "${OPENSSL_VER}" == "OpenSSL 3."* ]]; then
+        # if [[ "${OPENSSL_VER}" == "OpenSSL 1."* ]] || \
+        #   [[ "${OPENSSL_VER}" == "OpenSSL 3."* ]] || \
+        #   [[ "${OPENSSL_VER}" == "LibreSSL"* ]]; then
             # Process -no-evp (no -evp or low-level API for symmetric/no-key algorithms) first
             # to distinguish between, e.g. hmac-no-evp and hmac-sha512.
             if [ "${algo: -${#NO_EVP}}" == "${NO_EVP}" ]; then
                 # *-no-evp, i.e. `openssl speed *`.
                 # As of openssl 1.1.1, * may be sha256, sha512, and hmac (hmac(md5)).
                 # OpenSSL 3.0 or newer will depreciate them.
-                algo=${algo%${NO_EVP}}
+                algo=${algo%"${NO_EVP}"}
                 echo "algo: $algo"
                 NO_EVP_NAME=${NO_EVP}
             elif [ "${algo: 0: 5}" == "hmac-" ]; then
@@ -107,24 +117,26 @@ measure () {
             else
                 EVP_OPT="-evp"
             fi
-        else
-            echo "Unsupported: ${OPENSSL_VER}"
-            exit 1
-        fi
+        # fi
         # Set then check TABLE_TYPE's.
-        if [ $cou -eq 0 ]; then
-            TABLE_TYPE=${CUR_TABLE_TYPE}
-        elif [ $cou -ge 1 ] && [ "$TABLE_TYPE" != "$CUR_TABLE_TYPE" ] ; then
+        if [ ${cou} -eq 0 ]; then
+            PRE_TABLE_TYPE=${CUR_TABLE_TYPE}
+        elif [ ${cou} -ge 1 ] && [ "${PRE_TABLE_TYPE}" != "${CUR_TABLE_TYPE}" ] ; then
             echo
-            echo "Warning: skipped because TABLE_TYPE ($CUR_TABLE_TYPE) differs from the previous one ($TABLE_TYPE)!"
+            echo "Warning: skipped because CUR_TABLE_TYPE ($CUR_TABLE_TYPE)"
+            echo "         differs from the previous one (${PRE_TABLE_TYPE})!"
             echo
             continue
         fi
         ((cou++))
+
+        ## TODO: Add '-mr' (machine readable) option,
+        #        and change the corresponding table parsers.
+        echo "${OPENSSL} speed ${SPEED_OPT} ${EVP_OPT} $algo"
         # shellcheck disable=SC2086  # ${SPEED_OPT} and ${EVP_OPT} contain spaces.
         ${OPENSSL} speed ${SPEED_OPT} ${EVP_OPT} "$algo" | tee "${LOG}"
         ALGO3="${algo: 0: 3}"
-        if [ "$TABLE_TYPE" == "kbytes" ]; then
+        if [ "${PRE_TABLE_TYPE}" == "kbytes" ]; then
             ## Examples of input formats:
             # type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes  16384 bytes
             if [ "${NO_EVP_NAME}" == "" ]; then
@@ -139,28 +151,38 @@ measure () {
                     grep -i -E "^$algo" "${LOG}" >> "${DAT}"        
                 fi
             else
-                ## no -evp (old raw API)
+                ## no -evp (old low-level API)
                 # aes-128 cbc     228064.46k   210600.70k   190551.55k   232110.08k   238206.98k   231325.70k
                 # OpenSSL 1 and older
                 # hmac(md5)     23408.12k    90165.99k   249721.98k   538953.37k   756375.73k   782985.02k
                 # sha256           30840.78k    88357.72k   199311.27k   292801.60k   334301.56k   319321.27k
-                grep -i -E "^${ALGO3}" "${LOG}" | awk '{if (NF == 8) {$1=$1"-"$2;$2="";print} else {print}}' | sed -E -e "s/(^${ALGO3}[^ ]*?) /\1${NO_EVP_NAME} /" >> "${DAT}"
+                # LibreSSL 2.8.3
+                # hmac(md5)     23408.12k    90165.99k   249721.98k   538953.37k   756375.73k  
+                # sha256           30840.78k    88357.72k   199311.27k   292801.60k   334301.56k   
+                #
+                # aes-128 cbc -> aes-128-cbc-no-evp
+                # sha256 -> sha256-no-evp
+                # grep -i -E "^${ALGO3}" "${LOG}" | awk '{if (NF == 8) {$1=$1"-"$2;$2="";print} else {print}}' | sed -E -e "s/(^${ALGO3}[^ ]*?) /\1${NO_EVP_NAME} /" >> "${DAT}"
+                # grep -i -E "^${ALGO3}" "${LOG}" | awk -v NO_EVP_NAME="${NO_EVP_NAME}" '{if (NF == 8) {$1=$1"-"$2NO_EVP_NAME;$2="";print} else {$1=$1NO_EVP_NAME;print}}' >> "${DAT}"
+                grep -i -E "^${ALGO3}" "${LOG}" | awk -v NO_EVP_NAME="${NO_EVP_NAME}" '{if ( $2 !~ /^[0-9]+\.[0-9]+k$/ ) {$1=$1"-"$2NO_EVP_NAME;$2="";print} else {$1=$1NO_EVP_NAME;print}}' >> "${DAT}"
             fi
         elif [ "${ALGO3}" == "rsa" ] || [ "${ALGO3}" == "dsa" ]; then
             # All the RSA or DSA
             # rsa 4096 bits 0.003922s 0.000061s    255.0  16471.0
             # dsa 2048 bits 0.000296s 0.000219s   3383.0   4557.0
-            grep -i -E "^${ALGO3} [0-9]+ bits " "${LOG}" | awk '{$1=$1$2; $2=""; $3=""; print}' >> "${DAT}"
+            grep -i -E "^${ALGO3} [0-9]+ bits? " "${LOG}" | awk '{$1=$1$2; $2=""; $3=""; print}' >> "${DAT}"
         elif [ "${algo: 0:4}" == "ecdh" ] || [ "${algo: 0:5}" == "ecdsa" ] || [ "${algo: 0:2}" == "ed" ]; then
             #  256 bits ecdsa (nistp256)   0.0000s   0.0001s  43201.0  15221.0
             #  253 bits EdDSA (Ed25519)   0.0000s   0.0001s  24010.0   8805.0
             #  256 bits ecdh (nistp256)   0.0000s  20643.0
             #  256 bits ecdsa (brainpoolP256r1)   0.0004s   0.0004s   2448.7   2635.9
-            grep -i -E "^ [0-9]+ bits (ecdh \(|ecdsa \(|EdDSA \(Ed)" "${LOG}" | awk '{$1="";$2="";$3=$3$4;$4=""; print substr($0, 3)}' >> "${DAT}"
+            # LibreSSL 2.8.3
+            #  521 bit ecdh (nistp521)   0.0020s    507.5
+            grep -i -E "^ [0-9]+ bits? (ecdh \(|ecdsa \(|EdDSA \(Ed)" "${LOG}" | awk '{$1="";$2="";$3=$3$4;$4=""; print substr($0, 3)}' >> "${DAT}"
         elif [ "${algo: 0:4}" == "ffdh" ] ; then
             # OpenSSL 3 and later
             # 4096 bits ffdh   0.0129s     77.8
-            grep -i -E "^[0-9]+ bits ffdh " "${LOG}" | awk '{$1=$3$1;$2="";$3=""; print}' >> "${DAT}"
+            grep -i -E "^[0-9]+ bits? ffdh " "${LOG}" | awk '{$1=$3$1;$2="";$3=""; print}' >> "${DAT}"
         else
             echo
             echo "Warning: skipped. Add format type for this algorithm."
@@ -171,28 +193,38 @@ measure () {
 }
 
 ##
-# @brief        Identify TABLE_TYPE and set it to global TABLE_TYPE.
+# @brief        Identify TABLE_TYPE and set it to global TABLE_TYPE and NUM_FIELD.
 # @param[in]    ${DAT} [file name]
-# @param[out]   ${TABLE_TYPE} [text]
+# @param[out]   ${TABLE_TYPE}
+# @param[out]   ${NUM_FIELD}
 table_type () {
-    local NUM_FIELD
-    # Check if the records are in the same format.
-    # TODO make this more smart.
-    if [ "$(awk '(! /#/) && (NF > 1) {print NF}' < "${DAT}" | uniq | wc -l)" == "1" ]; then
-        NUM_FIELD="$(awk '(! /#/) && (NF > 1) {print NF}' "${DAT}" | uniq)"
+    # Check if records exist and they are in the same format.
+    # On macOS:
+    #   $ wc -l  ./graph.dat 
+    #   "    0 ./graph.dat"
+    NUM_FIELD=$(awk '(! /#/) && (NF > 1) {print NF}' "${DAT}" | uniq)
+    NUM_FIELD_VARIATION=$(echo "${NUM_FIELD}" | wc -l | awk '{print $1}' )
+    # if [ "$(awk '(! /#/) && (NF > 1) {print NF}' < "${DAT}" | uniq | wc -l | awk '{print $1}' )" == "1" ]; then   
+    if [ "${NUM_FIELD_VARIATION}" == "1" ]; then
+          # NUM_FIELD="$(awk '(! /#/) && (NF > 1) {print NF}' "${DAT}" | uniq)"
         echo "NUM_FIELD: ${NUM_FIELD}"
         case "$NUM_FIELD" in
-            7) TABLE_TYPE="kbytes";;
+            # 6 for LibreSSL 2.8.3
+            6|7) TABLE_TYPE="kbytes";;
             5) TABLE_TYPE="sig_ver";;
             3) TABLE_TYPE="op";;
-            *) echo "Error: unknown data format!";;
+            0|1) echo "Warning: $DAT has no appropriate table!";
+               return 1;;
+            *) echo "Error: unknown data format!";
+               return 1;;
         esac
     else
         echo
         echo "Error: records are not in the same format!"
         echo
-        exit 1
+        return 1
     fi
+    return 0
 }
 
 
@@ -200,6 +232,7 @@ table_type () {
 # @brief        Set params and plot
 # @param[in]    ${DAT} [file name]
 # @param[in]    ${TABLE_TYPE}
+# @param[in]    ${NUM_FIELD}
 # @param[out]   Figure in ${GRA_FILE}
 plot_data () {
     echo
@@ -224,10 +257,10 @@ plot_data () {
         "
 
     if [ "$GRA_TYPE" == "linespoints" ]; then
-        GRA_COL="0:"
+        GRA_CLM="0:"
         GRA_OPT="$GRA_OPT_COMMON;"
     elif [ "$GRA_TYPE" == "histogram" ]; then
-        GRA_COL=""
+        GRA_CLM=""
         GRA_OPT="$GRA_OPT_COMMON; \
             set style histogram clustered; \
             set style fill solid border lc rgb 'black';\
@@ -242,28 +275,34 @@ plot_data () {
         # GRA_YTICS="stats \"./$DAT\" using 1:7 nooutput; if ( (100000 < STATS_max_y) && (STATS_max_y < 1000000) ) { set ytics ('0' 0, '100,000' 1e5, '200,000' 2e5, '300,000' 3e5, '400,000' 4e5, '500,000' 5e5, '600,000' 6e5, '700,000' 7e5, '800,000' 8e5, '900,000' 9e5)};"
         XTICS_ROTATE_ANGLE="-10"
         SPEED_UNIT="k bytes/s"
+        if [ "${NUM_FIELD}" -ge 7 ]; then
+            GRA_CLM7="\"./${DAT}\" using ${GRA_CLM}7:xtic(1) with ${GRA_TYPE} title '16,384 bytes',"
+        else
+            # For LibreSSL 2.8.3
+            GRA_CLM7=""
+        fi
         GRA_PLOT=" \
-            \"./${DAT}\" using ${GRA_COL}7:xtic(1) with ${GRA_TYPE} title '16,384 bytes', \
-            \"./${DAT}\" using ${GRA_COL}6:xtic(1) with ${GRA_TYPE} title '8,192 bytes', \
-            \"./${DAT}\" using ${GRA_COL}5:xtic(1) with ${GRA_TYPE} title '1,024 bytes', \
-            \"./${DAT}\" using ${GRA_COL}4:xtic(1) with ${GRA_TYPE} title '256 bytes', \
-            \"./${DAT}\" using ${GRA_COL}3:xtic(1) with ${GRA_TYPE} title '64 bytes', \
-            \"./${DAT}\" using ${GRA_COL}2:xtic(1) with ${GRA_TYPE} title '16 bytes', \
+            \"./${DAT}\" using ${GRA_CLM}2:xtic(1) with ${GRA_TYPE} title '16 bytes', \
+            \"./${DAT}\" using ${GRA_CLM}3:xtic(1) with ${GRA_TYPE} title '64 bytes', \
+            \"./${DAT}\" using ${GRA_CLM}4:xtic(1) with ${GRA_TYPE} title '256 bytes', \
+            \"./${DAT}\" using ${GRA_CLM}5:xtic(1) with ${GRA_TYPE} title '1,024 bytes', \
+            \"./${DAT}\" using ${GRA_CLM}6:xtic(1) with ${GRA_TYPE} title '8,192 bytes', \
+            ${GRA_CLM7} \
             "
     elif [ "${TABLE_TYPE}" == "sig_ver" ]; then
         XTICS_ROTATE_ANGLE="-15"
         SPEED_UNIT="operations/s"
         GRA_PLOT=" \
-            \"./${DAT}\" using ${GRA_COL}5:xtic(1) with ${GRA_TYPE} title 'verify/s', \
-            \"./${DAT}\" using ${GRA_COL}4:xtic(1) with ${GRA_TYPE} title 'sign/s', \
+            \"./${DAT}\" using ${GRA_CLM}5:xtic(1) with ${GRA_TYPE} title 'verify/s', \
+            \"./${DAT}\" using ${GRA_CLM}4:xtic(1) with ${GRA_TYPE} title 'sign/s', \
             "
-            # \"./${DAT}\" using ${GRA_COL}8:xtic(4) with ${GRA_TYPE} title 'verify/s', \
-            # \"./${DAT}\" using ${GRA_COL}7:xtic(4) with ${GRA_TYPE} title 'sign/s', \
+            # \"./${DAT}\" using ${GRA_CLM}8:xtic(4) with ${GRA_TYPE} title 'verify/s', \
+            # \"./${DAT}\" using ${GRA_CLM}7:xtic(4) with ${GRA_TYPE} title 'sign/s', \
     elif [ "${TABLE_TYPE}" == "op" ]; then
         XTICS_ROTATE_ANGLE="-15"
         SPEED_UNIT="operations/s"
         GRA_PLOT=" \
-            \"./${DAT}\" using ${GRA_COL}3:xtic(1) with ${GRA_TYPE} title 'op/s' \
+            \"./${DAT}\" using ${GRA_CLM}3:xtic(1) with ${GRA_TYPE} title 'op/s' \
             "
     else
         echo "Unknown TABLE_TYPE: ${TABLE_TYPE}"
@@ -315,6 +354,46 @@ check_path (){
     fi     
 }
 
+##
+# @brief        Add dynamic-link lib path for built openssl.
+# @param[in]    ${OPENSSL}
+# @param[out]   ${DYLD_LIBRARY_PATH} or ${LD_LIBRARY_PATH}
+add_ld_lib_path (){
+    if [ "${OPENSSL}" != "openssl" ] && \
+    [ "${OPENSSL}" == "${OPENSSL%.exe}" ]; then
+        # macOS
+        # Add the path to lib{ssl,crypto}.3.dylib in ./tmp/openssl-*.*.*/ .
+        echo "OPENSSL: ${OPENSSL}"
+        echo "PWD: ${PWD}"
+        OPENSSL_LIB_PATH="${OPENSSL%apps/openssl}"
+        # echo "OPENSSL_LIB_PATH: ${OPENSSL_LIB_PATH}"
+        if [ "${OPENSSL}" != "${OPENSSL_LIB_PATH}" ]; then
+            # If ${OPENSSL} ends with 'apps/openssl' remove it.
+            # If ${OPENSSL} is the same as 'apps/openssl',
+            #    ${OPENSSL_LIB_PATH}="" and set "./"
+            PATH_TO_ADD="${OPENSSL_LIB_PATH:=./}"
+        else
+            # If OPENSSL=./openssl , it is from ./tmp/openssl-*.*.*/apps/ , so
+            PATH_TO_ADD="../"
+        fi
+        if [[ "$(uname -s)" == "Darwin"* ]]; then
+            # per process
+            if [ "${DYLD_LIBRARY_PATH}" != "${PATH_TO_ADD}" ] && \
+            [ "${DYLD_LIBRARY_PATH}" == "${DYLD_LIBRARY_PATH//${PATH_TO_ADD}://}" ]; then
+                export DYLD_LIBRARY_PATH="${PATH_TO_ADD}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+                echo "DYLD_LIBRARY_PATH: ${DYLD_LIBRARY_PATH}"
+            fi
+        else
+            # per environment
+            if [ "${LD_LIBRARY_PATH}" != "${PATH_TO_ADD}" ] && \
+            [ "${LD_LIBRARY_PATH}" == "${LD_LIBRARY_PATH//${PATH_TO_ADD}://}" ]; then
+                export LD_LIBRARY_PATH="${PATH_TO_ADD}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+                echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
+            fi
+        fi
+    fi
+}
+
 ### getopts ###
 
 OPENSSL=${DEFAULT_OPENSSL}
@@ -336,6 +415,8 @@ do
     esac
 done
 shift $((OPTIND - 1))
+
+add_ld_lib_path
 
 ### opt check ###
 
@@ -373,6 +454,12 @@ if [ "$PLOT_DATA_FILE" != "1" ]; then
             echo
             usage; exit 2
         fi
+        if [[ "${OPENSSL_VER}" == "LibreSSL"* ]]; then
+            echo
+            echo "Warning: -s option for \"${SPEED_OPT}\" is ignored on LibreSSL."
+            echo "  Change '${COMMAND}' after LibreSSL supports '-second' option."
+            SPEED_OPT=""
+        fi
     fi
     measure "$@"
 else
@@ -380,12 +467,10 @@ else
     if [ "${flagp}" == "1" ]; then
         echo
         echo "Warning: -p option is ignored."
-        echo
     fi
     if [ "${SPEED_OPT}" != "" ]; then
         echo
         echo "Warning: -s option for \"${SPEED_OPT}\" is ignored."
-        echo
     fi
     if [ "$#" == "0" ] && [ ! -e "${DAT}" ]; then
         echo
@@ -393,9 +478,10 @@ else
         echo
         exit 2
     fi
-    # Set TABLE_TYPE
-    table_type "${DAT}"
 fi
+
+# Set TABLE_TYPE and NUM_FIELD
+table_type "${DAT}" || exit 1
 plot_data
 
 echo

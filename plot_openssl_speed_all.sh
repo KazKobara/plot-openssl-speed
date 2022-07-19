@@ -38,6 +38,7 @@ usage () {
     echo "   options:"
     echo "     [-s seconds] Seconds [1-99] to measure the speed."
     echo "                  Set '1' to speed up for debug."
+    echo "                  LibreSSL at least 2.8.3 does not support this."
     echo "     [-(h|?)]     Show this usage"
     echo
 }
@@ -76,7 +77,8 @@ plot_graphs () {
     fi
     ###   - Diffie-Hellman key exchange:
     ###     - All the supported:
-    if [[ "${OPENSSL_VER}" == "OpenSSL 1."* ]]; then
+    if [[ "${OPENSSL_VER}" == "OpenSSL 1."* ]] || \
+       [[ "${OPENSSL_VER}" == "LibreSSL"* ]]; then
         ${PLOT_SCRIPT} -o "./${GRA_DIR}/dh.png" ecdh
     elif [[ "${OPENSSL_VER}" == "OpenSSL 3."* ]]; then
         ${PLOT_SCRIPT} -o "./${GRA_DIR}/dh.png" ecdh ffdh
@@ -125,7 +127,8 @@ COMMENT
     ###   - Hash functions with 112-bit or more security:
     ${PLOT_SCRIPT} -o "./${GRA_DIR}/hash.png" sha512-224 sha512-256 sha384 sha512-no-evp sha512 sha224 sha256-no-evp sha256 sha3-224 sha3-256 sha3-384 sha3-512
     ###   - HMAC:
-    if [[ "${OPENSSL_VER}" == "OpenSSL 1."* ]]; then
+    if [[ "${OPENSSL_VER}" == "OpenSSL 1."* ]] || \
+       [[ "${OPENSSL_VER}" == "LibreSSL"* ]]; then
         ${PLOT_SCRIPT} -o "./${GRA_DIR}/hmac.png" hmac-no-evp
     elif [[ "${OPENSSL_VER}" == "OpenSSL 3."* ]]; then
         ${PLOT_SCRIPT} -o "./${GRA_DIR}/hmac.png" hmac-no-evp hmac-md5 hmac-sha1 hmac-sha224 hmac-sha256 hmac-sha512-256 hmac-sha384 hmac-sha512 hmac-sha3-224 hmac-sha3-256 hmac-sha3-384 hmac-sha3-512
@@ -154,7 +157,7 @@ plot_openssl_tagged () {
     echo "--- ${openssl_dir} ---"
     # whether "*${TAG_MINGW}" or not
     if [ "${openssl_dir: -${#TAG_MINGW}}" == "${TAG_MINGW}" ]; then
-        tag=${openssl_dir%${TAG_MINGW}}
+        tag=${openssl_dir%"${TAG_MINGW}"}
         EXE=".exe"
         # TODO: -fstack-clash-protection in CONFIG_OPT causes the following `make` error:
         #       crypto/cryptlib.c:270:1: internal compiler error: in seh_emit_stackalloc, at config/i386/winnt.c:1043
@@ -165,16 +168,10 @@ plot_openssl_tagged () {
         MINGW_GCC_VER=$(/usr/bin/x86_64-w64-mingw32-gcc-posix --version | awk '/x86_64-w64-mingw32-gcc-posix/ {print substr($3,1,index($3,"-")-1)}')
     else
         tag=${openssl_dir}
-        # NOTE: -fstack-clash-protection in CONFIG_OPT seems to be ignored.
+        # NOTE: some compilers might ignore -fstack-clash-protection in CONFIG_OPT.
         #       Cf. hardening-check ./apps/openssl
         CONFIG_OPT="-fstack-protector-strong -fstack-clash-protection -fcf-protection"
         CONFIG="./config ${CONFIG_OPT}"
-        if [[ "$(uname -s)" =~ Darwin.* ]]; then
-            # macOS
-            EXPORT_LIB="export DYLD_LIBRARY_PATH=./${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
-        else
-            EXPORT_LIB="export LD_LIBRARY_PATH=./${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-        fi
     fi
     if [ -d "${openssl_dir}" ]; then
         echo
@@ -186,17 +183,24 @@ plot_openssl_tagged () {
     fi
     pushd "$(pwd)" || exit 2
     cd "${openssl_dir}" || exit 2;
+        OPENSSL="./apps/openssl${EXE}"
+        if [ ! -e "${OPENSSL}" ]; then
+            ${CONFIG} || exit 2
+            make || exit 2
+        fi
         if [ "${EXE}" == ".exe" ]; then
             if [ ! -e ./libssp-0.dll ]; then
                 cp -p  "/usr/lib/gcc/x86_64-w64-mingw32/${MINGW_GCC_VER}-posix/libssp-0.dll" .
             fi
         else
-            ${EXPORT_LIB}
-        fi
-        OPENSSL="./apps/openssl${EXE}"
-        if [ ! -e "${OPENSSL}" ]; then
-            ${CONFIG} || exit 2
-            make || exit 2
+            if [[ "$(uname -s)" == "Darwin"* ]]; then
+                # macOS
+                export DYLD_LIBRARY_PATH=./"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+                # echo "DYLD_LIBRARY_PATH: ${DYLD_LIBRARY_PATH}"
+            else
+                export LD_LIBRARY_PATH=./"${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+                # echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
+            fi
         fi
         OPENSSL_VER=$(${OPENSSL} version)
         plot_graphs
