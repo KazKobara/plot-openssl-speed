@@ -1,7 +1,6 @@
 tmp/
 trash/
-graph.png
-graph.dat
+graph.*
 # Emacs auto save files
 *~
 \#*#
