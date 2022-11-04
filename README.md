@@ -80,13 +80,14 @@ Example of graph list (LibreSSL 2.8.3 in PATH):
 
 ## Plot speed of openssl's obtained from source code
 
-The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.5`, and openssl.exe command cross-compiled by MinGW (x86_64-w64-mingw32-gcc):
+The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.7`, and openssl.exe command cross-compiled by MinGW (x86_64-w64-mingw32-gcc):
 
 ```bash
-./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw
+./plot_openssl_speed_all.sh -s 1 openssl-3.0.7 openssl-3.0.7-mingw
 ```
 
-> By adding `-mingw` after the tag-name, openssl.exe is cross-compiled by Mingw-w64, and then the results are added on WSL. On the other computational environment, Windows binary executable environment is needed.
+> * By adding `-mingw` after the tag-name, openssl.exe is cross-compiled by Mingw-w64, and then the results are added on WSL. The other computational environment requires Windows binary executable environment.
+> * openssl-3.0.5, shown as an example below, includes [vulnerabilities](https://www.openssl.org/news/vulnerabilities.html). So use a fixed or latest [OpenSSL](https://github.com/openssl/openssl) (or its alternative).
 
 Example of graph list (openssl-3.0.5 from source):
 ![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_3_0_5.png)
@@ -216,7 +217,13 @@ As you can see from the above, `plot_openssl_speed_all.sh` is a wrapper of `${PL
 > * '_1.1.1f' to be changed to the version of the openssl command in PATH.
 > * cf. `./plot_openssl_speed.sh -h` for the usage.
 
-If the openssl command specified by the `-p` option either uses shared libraries that is not in the standard library path, or encounters the following errors:
+One can specify the path to the openssl command with `-p` option as follows:
+
+```bash
+./plot_openssl_speed.sh -p "./tmp/openssl-3.0.7/apps/openssl" -o "./tmp/openssl-3.0.7/graphs/ed_ecdsa.png" eddsa ecdsa
+```
+
+If it encounters the following errors:
 
 ```text
 error while loading shared libraries: 
@@ -229,13 +236,13 @@ symbol lookup error:
 add the path to the shared library to `LD_LIBRARY_PATH` (`DYLD_LIBRARY_PATH` for macOS) as follows:
 
 ```bash
-(export LD_LIBRARY_PATH=./tmp/openssl-3.0.5${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; ./plot_openssl_speed.sh -p "./tmp/openssl-3.0.5/apps/openssl" -o "./tmp/openssl-3.0.5/graphs/ed_ecdsa.png" eddsa ecdsa)
+(export LD_LIBRARY_PATH=./tmp/openssl-3.0.7${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; ./plot_openssl_speed.sh -p "./tmp/openssl-3.0.7/apps/openssl" -o "./tmp/openssl-3.0.7/graphs/ed_ecdsa.png" eddsa ecdsa)
 ```
 
 The command `ldd` (or `otool -L` on macOS) shows a list of used shared libraries.
 
 ```console
-$ ldd ./tmp/openssl-3.0.5/apps/openssl
+$ ldd ./tmp/openssl-3.0.7/apps/openssl
         libssl.so.3 => not found
         libcrypto.so.3 => not found
 ```
@@ -428,5 +435,5 @@ Some versions of openssl commands do not support them.
 
 ---
 
-* [https://github.com/KazKobara/](https://github.com/KazKobara/)
-* [https://kazkobara.github.io/ (mostly in Japanese)](https://kazkobara.github.io/)
+* <https://github.com/KazKobara/>
+* <https://kazkobara.github.io/>

@@ -94,19 +94,20 @@ Results are in:
 
 ## 指定したバージョン(tag)をコンパイルし得たopensslコマンドの測定結果を描画する場合
 
-例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.5` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの測定結果と、それを MinGW (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での測定結果も図示する場合。
+例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.7` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの測定結果と、それを MinGW (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での測定結果も図示する場合。
 
 ```bash
-./plot_openssl_speed_all.sh -s 1 openssl-3.0.5 openssl-3.0.5-mingw
+./plot_openssl_speed_all.sh -s 1 openssl-3.0.7 openssl-3.0.7-mingw
 ```
 
 <!--
 ```bash
-bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1q openssl-3.0.5 OpenSSL_1_1_1q-mingw openssl-3.0.5-mingw"
+bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1q openssl-3.0.7 OpenSSL_1_1_1q-mingw openssl-3.0.7-mingw"
 ```
 -->
 
-> tagの後ろに`-mingw`を付けることで Windowsバイナリ openssl.exe が make され、WSL上ではその測定結果のグラフ画像も保存されます。WSL以外では Windowsバイナリ実行環境も構築する必要があります。
+> * tagの後ろに`-mingw`を付けることで Windowsバイナリ openssl.exe が make され、WSL上ではその測定結果のグラフ画像も保存されます。WSL以外では Windowsバイナリ実行環境も構築する必要があります。
+> * 以下の例で示しております openssl-3.0.5 には[脆弱性](https://www.openssl.org/news/vulnerabilities.html)があります。修正済または最新の [OpenSSL](https://github.com/openssl/openssl) (またはその代替プログラム)をご使用下さい。
 
 格納されたグラフ画像一覧の例(ソースからコンパイルした openssl-3.0.5):
 ![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_3_0_5.png)
@@ -262,22 +263,34 @@ ${PLOT_SCRIPT} -o "./${GRA_DIR}/ed_ecdsa.png" eddsa ecdsa
 > * 'openssl_1.1.1f' の部分は PATH 上の openssl コマンドの version に応じてご変更下さい。
 > * 使い方とオプションにつきましては `./plot_openssl_speed.sh -h` もご参照下さい。
 
-なお、標準的なディレクトリに格納されていない共有ライブラリを使用する openssl 実行ファイルを -p オプションで指定する最には、以下のように `LD_LIBRARY_PATH` (macOSでは `DYLD_LIBRARY_PATH`)に openssl が参照する共有ライブラリのディレクトリを追加する必要があります。
+PATH に含まれていない openssl 実行ファイルは -p オプションで指定することができます。
 
 ```bash
-./plot_openssl_speed.sh -p "./tmp/openssl-3.0.5/apps/openssl" -o "./tmp/openssl-3.0.5/graphs/ed_ecdsa.png" eddsa ecdsa
+./plot_openssl_speed.sh -p "./tmp/openssl-3.0.7/apps/openssl" -o "./tmp/openssl-3.0.7/graphs/ed_ecdsa.png" eddsa ecdsa
 ```
 
-<!--
-```bash
-(export LD_LIBRARY_PATH=./tmp/openssl-3.0.5${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; ./plot_openssl_speed.sh -p "./tmp/openssl-3.0.5/apps/openssl" -o "./tmp/openssl-3.0.5/graphs/ed_ecdsa.png" eddsa ecdsa)
+以下のようなエラー:
+
+```text
+error while loading shared libraries: 
 ```
--->
+
+```text
+symbol lookup error: 
+```
+
+が出る場合には、`LD_LIBRARY_PATH` (macOSでは `DYLD_LIBRARY_PATH`)に openssl が参照する共有ライブラリのディレクトリをご追加下さい。
+
+コマンドラインで一時的に共有ライブラリを追加し、上記コマンドを実行する例:
+
+```bash
+(export LD_LIBRARY_PATH=./tmp/openssl-3.0.7${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; ./plot_openssl_speed.sh -p "./tmp/openssl-3.0.7/apps/openssl" -o "./tmp/openssl-3.0.7/graphs/ed_ecdsa.png" eddsa ecdsa)
+```
 
 openssl が参照する共有ライブラリは `ldd` (macOSでは `otool -L`)コマンドで表示できます。
 
 ```console
-$ ldd ./tmp/openssl-3.0.5/apps/openssl
+$ ldd ./tmp/openssl-3.0.7/apps/openssl
         libssl.so.3 => not found
         libcrypto.so.3 => not found
 ```
@@ -496,6 +509,8 @@ openssl コマンドの version により実装されていないオプション
 
 ## リンク
 
+> 正しく表示されない場合は[GitHubのページ](https://github.com/KazKobara/plot-openssl-speed/blob/main/README-jp.md)をご参照下さい。
+
 * [[kec17]] [TeamKeccak "Is SHA-3 slow?"][kec17], 2017.6
 * [[vol]] ["$ openssl speed -evp aes-128-ctr | aes-128-gcm | chacha20-poly1305 の結果を集めるスレ"][vol]
 * [[mig]] ["OpenSSL (libssl libcrypto) の version を 1.1未満(1.0.2以前) から 1.1 以降に変更する方法や注意点など"][mig]
@@ -505,6 +520,10 @@ openssl コマンドの version により実装されていないオプション
 [mig]: https://kazkobara.github.io/openssl-migration/ "OpenSSL (libssl libcrypto) の version を 1.1未満(1.0.2以前) から 1.1 以降に変更する方法や注意点など"
 
 ---
+最後までお読み頂きありがとうございます。
+GitHubアカウントをお持ちでしたら、フォロー及び Star 頂ければと思います。リンクも歓迎です。
 
-* [https://github.com/KazKobara/](https://github.com/KazKobara/)
-* [https://kazkobara.github.io/ (mostly in Japanese)](https://kazkobara.github.io/)
+* [Follow (クリック後の画面左)](https://github.com/KazKobara)
+* [Star (クリック後の画面右上)](https://github.com/KazKobara/tips-jp)
+
+[homeに戻る](https://kazkobara.github.io/README-jp.html)
