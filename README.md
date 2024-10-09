@@ -340,14 +340,14 @@ LibreSSL 2.8.3 (shipped with macOS 12.4):
 
 LibreSSL 3.3.6 (shipped with macOS 14.6):
 
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/figs/libressl/cipher128-256_3_3_6bin.png" width="300" alt="libressl/cipher128-256_3_3_6bin" title="libressl/cipher128-256_3_3_6bin"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/libressl/cipher128-256_3_3_6bin.png" width="300" alt="libressl/cipher128-256_3_3_6bin" title="libressl/cipher128-256_3_3_6bin"/>
 <!--
 <img src="./figs/libressl/cipher128-256_3_3_6bin.png" width="300" alt="libressl/cipher128-256_3_3_6bin" title="libressl/cipher128-256_3_3_6bin"/>
 -->
 
 LibreSSL 3.9.2 (from the source code):
 
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/figs/libressl/cipher128-256_3_9_2.png" width="300" alt="libressl/cipher128-256_3_9_2" title="libressl/cipher128-256_3_9_2"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/libressl/cipher128-256_3_9_2.png" width="300" alt="libressl/cipher128-256_3_9_2" title="libressl/cipher128-256_3_9_2"/>
 <!--
 <img src="./figs/libressl/cipher128-256_3_9_2.png" width="300" alt="libressl/cipher128-256_3_9_2" title="libressl/cipher128-256_3_9_2"/>
 -->
