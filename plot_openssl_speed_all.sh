@@ -108,7 +108,7 @@ openssl_type_to_oqs_branches () {
 plot_graph_asymmetric () {
     GRA_TITLE_APPENDIX="with ${OPENSSL_VER_NOSPACE}"
     ### Asymmetric-key algorithms:
-    ## Post Quantum (Open Quantum Safe)
+    ## Post-Quantum (Open Quantum Safe)
     # NOTE: even if [ -n "${LIBOQS_VER}" ] is true,
     #       GRA_TITLE_APPENDIX does not require 'liboqs${LIBOQS_VER}'
     #       unless the graph includes any oqs algorithm.
@@ -253,12 +253,18 @@ plot_graph_asymmetric () {
         echo "Move/remove it to renew it."
         echo
     else
+        # NOTE:
+        #   "ffdh" is unknown for LibreSSL at least up to 4.0.0 and OpenSSL 1.
+        ${PLOT_SCRIPT} -o "./${GRA_DIR}/dh_all.png" ecdh ffdh
+:<<'# COMMENT_EOF'
+        # unknown algorithms are ignored
         if [[ "${OPENSSL_VER_NOSPACE}" == "OpenSSL1."* ]] || \
         [[ "${OPENSSL_VER_NOSPACE}" == "LibreSSL"* ]]; then
             ${PLOT_SCRIPT} -o "./${GRA_DIR}/dh_all.png" ecdh
         elif [[ "${OPENSSL_VER_NOSPACE}" == "OpenSSL3."* ]]; then
             ${PLOT_SCRIPT} -o "./${GRA_DIR}/dh_all.png" ecdh ffdh
         fi
+# COMMENT_EOF
     fi
     ###   - Examples of proportional for ecdh
     if [ -s "./${GRA_DIR}/dh_all.dat" ]; then
@@ -338,19 +344,47 @@ plot_graph_asymmetric () {
 # @param[in]    global PLOT_SCRIPT GRA_DIR OPENSSL_VER_NOSPACE
 # @param[out]   *.png files under GRA_DIR
 plot_graph_symmetric () {
+    # NOTE:
+    #   ${PLOT_SCRIPT} ignores unsupported algorithms.
+    #   So you do not need to remove them.
+    #
     # Comment out if not necessary
     ###   - Ciphers with around 128/256 (classical) bit security:"
-    ${PLOT_SCRIPT} -o "./${GRA_DIR}/cipher128-256.png" aes-128-ctr aes-128-gcm aes-128-ccm chacha20-poly1305 aes-256-ctr aes-256-gcm aes-256-ccm
-    ${PLOT_SCRIPT} -o "./${GRA_DIR}/aes128-cbc.png" aes-128-cbc aes-128-cbc-no-evp
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/cipher128-256.png" \
+        aes-128-ctr aes-128-gcm aes-128-ccm chacha20-poly1305\
+        aes-256-ctr aes-256-gcm aes-256-ccm
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/aes128-cbc.png" \
+        aes-128-cbc aes-128-cbc-no-evp
     ###   - Hash functions with 112-bit or more security:
-    ${PLOT_SCRIPT} -o "./${GRA_DIR}/hash.png" sha512-224 sha512-256 sha384 sha512-no-evp sha512 sha224 sha256-no-evp sha256 sha3-224 sha3-256 sha3-384 sha3-512
-    ###   - HMAC:
-    if [[ "${OPENSSL_VER_NOSPACE}" == "OpenSSL1."* ]] || \
-       [[ "${OPENSSL_VER_NOSPACE}" == "LibreSSL"* ]]; then
-        ${PLOT_SCRIPT} -o "./${GRA_DIR}/hmac.png" hmac-no-evp
-    elif [[ "${OPENSSL_VER_NOSPACE}" == "OpenSSL3."* ]]; then
-        ${PLOT_SCRIPT} -o "./${GRA_DIR}/hmac.png" hmac-no-evp hmac-md5 hmac-sha1 hmac-sha224 hmac-sha256 hmac-sha512-256 hmac-sha384 hmac-sha512 hmac-sha3-224 hmac-sha3-256 hmac-sha3-384 hmac-sha3-512
-    fi
+    # NOTE: "whirlpool" is unknown for OpenSSL 3.
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/hash.png"\
+        sha512-224 sha512-256 sha384 sha512 sha512-no-evp\
+        sha224 sha256 sha256-no-evp\
+        SHAKE128 SHAKE256 whirlpool\
+        sha3-224 sha3-256 sha3-384 sha3-512
+    ###   - HMAC and KMAC:
+    # NOTE: OpenSSL1 and LibreSSL at least up to 4.0.0 seem to support
+    #       only "hmac(-no-evp)".
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/hmac.png" hmac-md5 hmac-sha1 \
+        hmac-sha512-224 hmac-sha512-256 hmac-sha384 hmac-sha512 \
+        hmac-sha224 hmac-sha256 hmac-no-evp \
+        kmac128-no-evp kmac256-no-evp
+        # hmac-sha3-224 hmac-sha3-256 hmac-sha3-384 hmac-sha3-512 \
+        # KECCAK-KMAC128 KECCAK-KMAC256
+        # cmac aes-192-cbc aes-256-cbc
+    # NOTE:
+    #   - sha3 does not require hmac but for comparison with kmac.
+    #   - KECCAK-KMAC is picking up the KMAC digest (without key-prepend) not the KMAC MAC.
+    #     The MAC is called KMAC128 or KMAC256.
+    #     https://github.com/openssl/openssl/issues/22619
+    #   - cmac (aes-128-cbc), aes-192-cbc and aes-256-cbc are available.
+    ###   - KECCAK derived algorithms
+    # 128 bit security
+    # ../../plot_openssl_speed.sh -o ./graphs/hmac_kmac_128bs.png -p ./openssl/apps/openssl SHAKE128 KECCAK-KMAC128 kmac128-no-evp sha3-256 hmac-sha3-256
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_128bs.png" -p ./openssl/apps/openssl SHAKE128 KECCAK-KMAC128 kmac128-no-evp sha3-256 hmac-sha3-256
+    # 256 bit security
+    # ../../plot_openssl_speed.sh -o ./graphs/hmac_kmac_256bs.png -p ./openssl/apps/openssl SHAKE256 KECCAK-KMAC256 kmac256-no-evp sha3-512 hmac-sha3-512
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_256bs.png" -p ./openssl/apps/openssl SHAKE256 KECCAK-KMAC256 kmac256-no-evp sha3-512 hmac-sha3-512
     ####################################################################
 }
 
@@ -574,10 +608,24 @@ set_openssl_tagged () {
             libressl|LibreSSL|LIBRESSL)
                 tag="${tag_candidate}"
                 if [[ "${tag}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                    # tag=3.9.2 for download from https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/
+                    # NOTE:
+                    #   "${tag}" consisting of only a version number, such as
+                    #   tag=3.9.2, downloads the version from
+                    #   https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/
                     curl "https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-${tag}.tar.gz" | tar zxv -C .
                 else
-                    # tag=v3.9.2 , OPENBSD_7_4, master (or main) for git
+                    # NOTE:
+                    #   - The other "${tag}"'s, such as
+                    #     'v3.9.2' (v with a version number),
+                    #     'OPENBSD_7_4' ('OPENBSD_' with a version number),
+                    #     'master' (or 'main') are tag/branch names of git.
+                    #   - Both v4.0.0 and OPENBSD_7_6 cause the following error
+                    #     in its ./autogen.sh
+                    #     (though tag=4.0.0 (download version) or
+                    #     master (at least 13a2874) work):
+                    #       "Can't open perl script
+                    #       "openbsd/src/lib/libcrypto/x86_64cpuid.pl":
+                    #       No such file or directory"
                     git_url="https://github.com/libressl/portable.git"
                     ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
                     (cd "${openssl_type_dir}" && ./autogen.sh)

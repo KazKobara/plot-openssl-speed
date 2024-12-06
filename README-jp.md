@@ -155,7 +155,7 @@ master/main ブランチの場合は、以下のように引数(openssl-type)を
 
 ## グラフから読み取れることと補足
 
-処理速度は様々な要因により変わるため、あくまで[こちらの測定環境](#測定環境)における参考です。また、処理速度が速いというだけで、**脆弱性**な暗号アルゴリズムや、各用途で求められる**セキュリティレベルを満たさないアルゴリズム**を選択しないようにご注意下さい。
+処理速度は様々な要因により変わるため、あくまで[こちらの測定環境](#測定環境)における参考です。また、処理速度が速いというだけで、**脆弱**な暗号アルゴリズムや、各用途で求められる**セキュリティレベルを満たさないアルゴリズム**を選択しないようにご注意下さい。
 
 > どのような用途においてどのようなアルゴリズムを用いるべきかなどにつきましては、もし必要でしたら勉強会などに呼んで頂ければ解説致します。
 
@@ -209,12 +209,12 @@ KEM (Key Encapsulation Mechanism, 鍵カプセル化):
 
 256(クラシカル)ビットセキュリティ相当方式の比較:
 
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs.png" width="600" alt="sig_256bs" title="sig_256bs"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs.png" width="400" alt="sig_256bs" title="sig_256bs"/>
 <!--
 <img src="./figs/pqc/sig_256bs.png" width="400" alt="sig_128bs" title="sig_256bs"/>
 -->
 
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs_size.png" width="600" alt="sig_256bs_size" title="sig_256bs_size"/>
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs_size.png" width="400" alt="sig_256bs_size" title="sig_256bs_size"/>
 <!--
 <img src="./figs/pqc/sig_256bs_size.png" width="400" alt="sig_256bs_size" title="sig_256bs_size"/>
 -->
@@ -371,14 +371,14 @@ APIの差:
 * `sha512-224`, `sha512-256`, `sha384` は `sha512` のハッシュ値のビット長を切り詰めたアルゴリズムですので、それらはほぼ同じ処理速度を示しています。
 * 同様に `sha224` も `sha256` の初期値を変えハッシュ値を切り詰めたアルゴリズムですので、それらもほぼ同じ処理速度を示しています。
 
-`sha256` と `sha512` の差:
+`sha256` と `sha512` との差:
 
-* 16バイトデータ(一般化すると 512-1-64 bits(または 55 バイト)以下)に対する処理速度は、SHAの圧縮関数一回分の処理速度を表しており、`sha256` の方が `sha512` より速いことが分かる。
-* 入力データサイズがそれらより大きくなると、`sha256`では圧縮関数を`sha512`に対してほぼ２倍多く実行しなければならなくなるため、`sha256` の方が `sha512` より遅くなる。
+* 16バイトデータ(一般化すると 512-1-64=447 bits(または 55 バイト)以下)に対する処理速度は、SHAの圧縮関数一回分の処理速度を表しており、`sha256` の方が `sha512` より速いことが分かります。
+* 入力データサイズがそれらより大きくなると、`sha256`では圧縮関数を`sha512`に対してほぼ２倍多く実行しなければならなくなるため、`sha256` の方が `sha512` より遅くなります。
 
-SHA-3:
+`SHA-3` と `SHAKE`:
 
-* 図中右側の `sha3-*` はハッシュ値のビット数が大きくなるにつれ処理速度が低下する結果を示しています。
+* `SHA-3`(`sha3-*`)はハッシュ値のビット数、`SHAKE`はビットセキュリティの値に比例してメッセージの読み込みレートが小さくなるため処理速度が低下します。
 * `SHA-3`(`sha3-*`)が`SHA-2`と比べ遅い理由は[[kec17]]でも述べられているとおり、将来の攻撃の進展に備えた大きめのセキュリティマージンによります。
 
 ### 共通鍵暗号と暗号利用モード
@@ -401,7 +401,7 @@ SHA-3:
 
 例外:
 
-* 下図のように、LibreSSL (少なくとも、macOS 附属の 2.8.3, 3.3.6 のバイナリ及び 2.9.1, 3.0.0 以降のソース) では、入力サイズの大きな `aes-(128|256)-gcm` 及び `aes-(128|256)-ccm` の一部又は全体の処理速度が格段に大きく出ます。
+* 下図のように、LibreSSL (少なくとも、macOS 附属の 2.8.3, 3.3.6 のバイナリ及び 2.9.1, 3.0.0 以降のソース) では、入力サイズの大きな `aes-(128|256)-gcm` 及び `aes-(128|256)-ccm` の一部または全体の処理速度が格段に大きく出ます。
 
 LibreSSL 2.8.3 (macOS 12.4 附属バイナリ):
 
@@ -426,11 +426,44 @@ LibreSSL 3.9.2 (ソースコードからのビルド):
 
 ### OpenSSL 1 と 3 とでの主要な違い
 
-* 上記の OpenSSL 1 と 3 グラフ画像一覧を比較すると、左上の `aes128-cbc.png` の図 (古い暗号利用モード CBC を使う 128ビット鍵AES共通鍵暗号の処理速度の棒グラフ)の右側の `aes-128-cbc-no-evp` (low-level API 経由で実行した場合の処理速度)が、OpenSSL 1 では極端に遅くなっていることが分かります。
+* 冒頭の「格納されたグラフ画像一覧の例」の OpenSSL 1 と 3 グラフ画像一覧を比較すると、左上の `aes128-cbc.png` の図 (古い暗号利用モード CBC を使う 128ビット鍵AES共通鍵暗号の処理速度の棒グラフ)の右側の `aes-128-cbc-no-evp` (low-level API 経由で実行した場合の処理速度)が、OpenSSL 1 では極端に遅くなっていることが分かります。
 
-  > * LibreSSL (少なくとも 3.9.2 まで)においても OpenSSL 1 と同様に極端に遅くなっています。
+  > * LibreSSL (少なくとも 4.0.0 まで)においても OpenSSL 1 と同様に極端に遅くなっています。
   > * Low-level API は OpenSSL 3 からは非推奨
   ([deprecated](https://wiki.openssl.org/index.php/OpenSSL_3.0#Low_Level_APIs))になっています。
+
+### メッセージ認証子(MAC: Message Authentication Code)
+
+ハッシュ関数(またはKeccak)に基づくMACの処理速度を以下に示します。
+
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/hmac.png" width="600" alt="hmac and kmac" title="hmac and kmac"/>
+<!--
+<img src="./figs/hmac.png" width="600" alt="hmac and kmac" title="hmac and kmac"/>
+-->
+
+* ハッシュ関数の場合と同様に16バイトなどの小さなメッセージに対しては `hmac(sha512)`とそのハッシュ値切り詰め版より `hmac(sha256)`とそのハッシュ値切り詰め版の方が速くなります。
+* 本図中のMACと`cipher128-256.png`中の`AES-*-GCM`との処理速度を比べると、後者の方が速いことが分ります。
+  * 理論的に、GCMをブロック暗号に基づいたMACとして利用するGMACの方がGCMより速いため、AESを用いたGMACの方がハッシュ関数(またはKeccak)に基づくMACより速いことが分かります。
+
+Keccak由来関数の処理速度の比較も以下に示しておきます。
+
+128ビットセキュリティKeccak由来関数の比較:
+
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/keccak_128bs.png" width="400" alt="keccak-derived 128bs" title="keccak-derived 128bs"/>
+<!--
+<img src="./figs/keccak_128bs.png" width="400" alt="keccak-derived 128bs" title="keccak-derived 128bs"/>
+-->
+
+256ビットセキュリティKeccak由来関数の比較:
+
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/keccak_256bs.png" width="400" alt="keccak-derived 256bs" title="keccak-derived 256bs"/>
+<!--
+<img src="./figs/keccak_256bs.png" width="400" alt="keccak-derived 256bs" title="keccak-derived 256bs"/>
+-->
+
+* SHA-3はメッセージ伸長攻撃に耐性があるため、SHA-2などのように HMAC を利用する必要はなく、keyed-hash の `KMAC` を利用できます。
+  * ただし、keyed-hash として付け足される処理（鍵処理）により、小さなメッセージの処理速度が、特に128ビットセキュリティにおいて、遅くなっていることが分ります。
+* `KECCAK-KMAC*`は `KMAC` の鍵処理を省いた部分のため、`SHAKE*`と処理速度がほぼ同じになっていることが分ります。
 
 ## 測定対象の暗号アルゴリズムを変更する場合
 
@@ -625,7 +658,7 @@ v0.0.0でデジタル署名に使用していたフォーマット。
 
 > 処理時間を描画対象にしなかった理由:
 > 遅いアルゴリズムが比較対象に入っている場合にどのアルゴリズムが速いのか見分けにくい。
-> 速いアルゴリズムの処理時間は0又は最小単位に量子化（丸め）られている。
+> 速いアルゴリズムの処理時間は0または最小単位に量子化（丸め）られている。
 
 例:
 
@@ -804,6 +837,16 @@ gnuplot 5.4 patchlevel 3
 ```
 
 ## トラブルシューティング
+
+### `unable to load provider`と表示される
+
+`OPENSSL_MODULES` 環境変数、または、コマンドオプションの `-provider` より前に `-provider-path` オプションでプロバイダー(oqs-provider の場合は `oqsprovider.so`)のあるフォルダを指定
+
+`plot_openssl_speed_all.sh` で生成された `tmp/openssl-<ver>-oqsprovider<ver>-liboqs<ver>` フォルダ内から実行するコマンドの例:
+
+```console
+./openssl/apps/openssl list -kem-algorithms -provider-path ./_build/lib/ -provider oqsprovider
+```
 
 ### libssp-0.dll が見つからない
 

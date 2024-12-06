@@ -584,7 +584,7 @@ plot_data () {
     if [ "${NUM_OF_RECORDS}" -ge 14 ]; then
         GRA_XTICS_ROTATE="set xtics rotate by -90;"
         GRA_KEY_POS="center"
-    elif [ "${NUM_OF_RECORDS}" -ge 7 ]; then
+    elif [ "${NUM_OF_RECORDS}" -ge 6 ]; then
         # GRA_XTICS_ROTATE="set xtics rotate by -60 offset first -0.3,0;"
         GRA_XTICS_ROTATE="set xtics rotate by -45 offset first -0.4,0;"
         GRA_KEY_POS="center"

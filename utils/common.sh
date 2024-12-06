@@ -5,7 +5,7 @@ set -e
 
 ### Params ###
 # shellcheck disable=SC2034  # used in plot_openssl*.sh
-VER=1.0.0
+VER=1.0.1
 GRA_DIR="graphs"
 UNAME_S="$(uname -s)"
 
@@ -55,9 +55,11 @@ check_path (){
 get_arr_oqs () {
     local arr_tmp algorithm_type
     for algorithm_type in "$@"; do
-        # TODO: improve
-        # IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | awk '/^[^_]+ @ oqsprovider$/ {printf "%s ",$1}')"
-        IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | awk '/^[^_]+ @ oqsprovider$/ {print $1}' | sort -V | awk '{printf "%s ",$1}')"
+        # Listing up all the post-quantum algorithms that are not hybrid with
+        # classic ones whose names include '_' except
+        # X25519MLKEM768 and SecP256r1MLKEM768 for at least
+        # openssl-3.4.0-oqsprovider0.7.0-liboqs0.11.0.
+        IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | awk '$1 ~ /(X25519|X448|Sec)/{ next } /^[^_]+ @ oqsprovider$/ {print $1}' | sort -V | awk '{printf "%s ",$1}')"
         # shellcheck disable=SC2034  # used in other scripts
         case "${algorithm_type}" in
             "signature") ARR_OQS_SIG=("${arr_tmp[@]}");;

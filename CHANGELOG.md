@@ -4,7 +4,19 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.0.1] -->
+<!-- ## [Unreleased 1.0.2] -->
+
+## [1.0.1]
+
+### Added
+
+- Keccak-derived algorithms to [keccak_128bs.png](./figs/keccak_128bs.png) and [keccak_256bs.png](./figs/keccak_256bs.png).
+- SHAKE to [hash.png](./figs/hash.png).
+- KMAC to [hmac.png](./figs/hmac.png).
+
+### Removed
+
+- Algorithm selection using versions and project names in plot_openssl_speed_all.sh since unknown algorithms are ignored in plot_openssl_speed.sh.
 
 ## [1.0.0]
 

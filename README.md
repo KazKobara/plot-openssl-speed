@@ -70,7 +70,7 @@
     cd ..
     ```
 
-    then, run the following scripts.
+1. Run the following scripts depending on what to depict.
 
 ## Plot `openssl speed` with openssl command in PATH
 
@@ -141,7 +141,7 @@ The above and the following graphs show the results in the following [computatio
 
 Be careful not to use **broken** or **insufficient-security-level** algorithms even if they are faster than the other.
 
-### Post Quantum Cryptography (PQC)
+### Post-Quantum Cryptography (PQC)
 
 The followings graphs show the processing speeds of PQC's available at OpenSSL 3.4.0-alpha1 with oqs-provider 0.6.1 and liboqs 0.11.0-rc1.
 
@@ -309,12 +309,12 @@ Comparison among truncated versions:
 
 Comparison between `sha256` and `sha512`:
 
-* The speed for 16 bytes, or more generally 512-1-64 bits (or 55 bytes) or less, shows the speed of one compression function in both `sha256` and `sha512`. Hence, the figure indicates that one `sha256` compression function is faster than that of `sha512`.
+* The speed for 16 bytes, or more generally 512-1-64=447 bits (or 55 bytes) or less, shows the speed of one compression function in both `sha256` and `sha512`. Hence, the figure indicates that one `sha256` compression function is faster than that of `sha512`.
 * For more bytes, `sha512` is faster than `sha256` since the number of `sha512` compression-function executions is around half of `sha256` where the input bit length of `sha256` and `sha512`compression functions are 512-bits and 1024-bits, respectively.
 
-SHA-3:
+`SHA-3` and `SHAKE`:
 
-* As shown in the right of the figure, the larger the size, the slower the processing speed among `sha3-*`.
+* As shown in the right of the figure, the larger the size, the slower the message processing speed among `sha3-*` and `SHAKE`.
 * Compared to `SHA-2`, `SHA-3`(`sha3-*`) are slower due to the larger security margin [[kec17]].
 
 ### Symmetric-key cryptosystems and their modes of operation
@@ -354,10 +354,43 @@ LibreSSL 3.9.2 (from the source code):
 
 ### Differences between OpenSSL 1 and 3
 
-* As shown on the right side of `aes128-cbc.png`, `aes-128-cbc-no-evp` (128-bit key AES with the legacy mode of operation, CBC) called by way of the low-level API is slower in OpenSSL 1.1.1 than the high-level API and OpenSSL 3.0.5.
+* By comparing `aes128-cbc.png` at the left-top corner of "Example of graph list," `aes-128-cbc-no-evp` (128-bit key AES with the legacy mode of operation, CBC) called by way of the low-level API is slower in OpenSSL 1.1.1 than the high-level API and OpenSSL 3's low-level API.
 
-  > * LibreSSL (at least up to 3.9.2) shows the sililar results as OpenSSL 1.
+  > * LibreSSL (at least up to 4.0.0) shows the similar results as OpenSSL 1.
   > * Low-level APIs are deprecated at OpenSSL 3.
+
+### Message Authentication Code (MAC)
+
+Below is a speed comparison among hash-(or Keccak-)based MACs.
+
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/hmac.png" width="600" alt="hmac and kmac" title="hmac and kmac"/>
+<!--
+<img src="./figs/hmac.png" width="600" alt="hmac and kmac" title="hmac and kmac"/>
+-->
+
+* For smaller messages, such as 16 bytes, `hmac(sha256)` and its truncated versions are faster than `hmac(sha512)` and its truncated versions, likewise to the hash functions.
+* All these hash-(or Keccak-)based MACs are slower than `AES-*-GCM` in `cipher128-256.png`.
+  * This means that GMAC, a special case of GCM to be used as a block-cipher-based MAC, using AES is faster than them since GMAC is faster than GCM.
+
+The followings are speed comparisons among some Keccak-derived algorithms.
+
+128-bit security Keccak-derived algorithms:
+
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/keccak_128bs.png" width="400" alt="keccak-derived 128bs" title="keccak-derived 128bs"/>
+<!--
+<img src="./figs/keccak_128bs.png" width="400" alt="keccak-derived 128bs" title="keccak-derived 128bs"/>
+-->
+
+256-bit security Keccak-derived algorithms:
+
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/keccak_256bs.png" width="400" alt="keccak-derived 256bs" title="keccak-derived 256bs"/>
+<!--
+<img src="./figs/keccak_256bs.png" width="400" alt="keccak-derived 256bs" title="keccak-derived 256bs"/>
+-->
+
+* `KMAC` keyed-hash is available instead of `hmac(sha3-*)` since SHA-3 resists length-extension attacks, though `KMAC` can be slower than `hmac(sha3-*)` for smaller message sizes, especially for smaller bit securities, such as 128 bits.
+* `KECCAK-KMAC*` in OpenSSL is a `KMAC` that omits key processing.
+  * Hence, its speed is almost the same as `SHAKE*`.
 
 ## To change crypt-algorithms to depict
 
@@ -698,6 +731,16 @@ gnuplot 5.4 patchlevel 3
 
 ## Troubleshooting
 
+### unable to load provider
+
+Specify the path to the provider, `oqsprovider.so` for oqs-provider, by either `OPENSSL_MODULES` environment variable or `-provider-path` option before `-provider`.
+
+Example of a command line to run in a `tmp/openssl-<ver>-oqsprovider<ver>-liboqs<ver>` dir, which was generated by `plot_openssl_speed_all.sh`:
+
+```console
+./openssl/apps/openssl list -kem-algorithms -provider-path ./_build/lib/ -provider oqsprovider
+```
+
 ### libssp-0.dll is missing
 
 Either add the folder of `libssp-0.dll` to the Windows environment PATH, or run the following commands on a WSL Debian/Ubuntu terminal:
@@ -728,8 +771,6 @@ Check if your security software displays a message that blocks the execution. If
 [kec17]: https://keccak.team/2017/is_sha3_slow.html (TeamKeccak "Is SHA-3 slow?")
 [pq-sig-zoo]: https://pqshield.github.io/nist-sigs-zoo/ "Post-Quantum signatures zoo"
 [ebats]: https://bench.cr.yp.to/ebats.html "eBATS: ECRYPT Benchmarking of Asymmetric Systems"
-
-## Acknowledgments
 
 ---
 

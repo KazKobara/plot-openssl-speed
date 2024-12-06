@@ -6,7 +6,7 @@ set -e
 # set -x
 
 ### Params ###
-VER=1.0.0
+VER=1.0.1
 COMMAND=$(basename "$0")
 COMMAND_TMP="${COMMAND%.sh}.tmp"
 rm -f "${COMMAND_TMP}"
@@ -1144,6 +1144,7 @@ set_algo () {
     # kem 192bs
     KEM_ARR_192BS_EBATS_SIZE=(
         "kyber768"
+        "bikel3"
         "hqc192round4"
         "frodokem976aes"
         "mceliece460896f"
