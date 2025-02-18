@@ -731,6 +731,17 @@ gnuplot 5.4 patchlevel 3
 
 ## Troubleshooting
 
+### ModuleNotFoundError: No module named
+
+Import the missing Python modules.
+If `yaml` and `tabulate` in `oqs-template/generate_oid_nid_table.py` are missing, run:
+
+```console
+pip install pyyaml tabulate
+```
+
+Then run the same command that caused the above error again.
+
 ### unable to load provider
 
 Specify the path to the provider, `oqsprovider.so` for oqs-provider, by either `OPENSSL_MODULES` environment variable or `-provider-path` option before `-provider`.

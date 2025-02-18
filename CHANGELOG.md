@@ -6,6 +6,12 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- ## [Unreleased 1.0.2] -->
 
+## [Unreleased]
+
+### Added
+
+- A solution to `ModuleNotFoundError` in README.
+
 ## [1.0.1]
 
 ### Added
