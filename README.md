@@ -43,6 +43,10 @@
           chsh -s /bin/bash
           ```
 
+    * For post-quantum cryptographies:
+
+      1. Install Python 3 and some of its external libraries and packages, such as `pyyaml` and `tabulate`.
+
 1. Download scripts:
 
     ```bash
@@ -147,15 +151,17 @@ The followings graphs show the processing speeds of PQC's available at OpenSSL 3
 
 Digital signature:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/oqs_sig_all.png" width="500" alt="oqs_sig_all" title="oqs_sig_all"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/oqs_sig_all.png" width="500" alt="oqs_sig_all" title="oqs_sig_all"/> -->
 <img src="./figs/pqc/oqs_sig_all.png" width="500" alt="oqs_sig_all" title="oqs_sig_all"/>
+-->
 
 KEM (Key Encapsulation Mechanism):
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/oqs_kem_all.png" width="500" alt="oqs_kem_all" title="oqs_kem_all"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/oqs_kem_all.png" width="500" alt="oqs_kem_all" title="oqs_kem_all"/> -->
 <img src="./figs/pqc/oqs_kem_all.png" width="500" alt="oqs_kem_all" title="oqs_kem_all"/>
+-->
 
 ### Comparison between conventional/classical cryptographies and PQC's
 
@@ -165,33 +171,39 @@ KEM (Key Encapsulation Mechanism):
 
 Comparison among 128-(classical-)bit security algorithms:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_128bs.png" width="400" alt="sig_128bs" title="sig_128bs"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_128bs.png" width="400" alt="sig_128bs" title="sig_128bs"/> -->
 <img src="./figs/pqc/sig_128bs.png" width="400" alt="sig_128bs" title="sig_128bs"/>
+-->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_128bs_size.png" width="400" alt="sig_128bs_size" title="sig_128bs_size"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_128bs_size.png" width="400" alt="sig_128bs_size" title="sig_128bs_size"/> -->
 <img src="./figs/pqc/sig_128bs_size.png" width="400" alt="sig_128bs_size" title="sig_128bs_size"/>
+-->
 
 Comparison among 192-(classical-)bit security algorithms:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_192bs.png" width="400" alt="sig_192bs" title="sig_192bs"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_192bs.png" width="400" alt="sig_192bs" title="sig_192bs"/> -->
 <img src="./figs/pqc/sig_192bs.png" width="400" alt="sig_128bs" title="sig_192bs"/>
+-->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_192bs_size.png" width="400" alt="sig_192bs_size" title="sig_192bs_size"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_192bs_size.png" width="400" alt="sig_192bs_size" title="sig_192bs_size"/> -->
 <img src="./figs/pqc/sig_192bs_size.png" width="400" alt="sig_192bs_size" title="sig_192bs_size"/>
+-->
 
 Comparison among 256-(classical-)bit security algorithms:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs.png" width="400" alt="sig_256bs" title="sig_256bs"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs.png" width="400" alt="sig_256bs" title="sig_256bs"/> -->
 <img src="./figs/pqc/sig_256bs.png" width="400" alt="sig_128bs" title="sig_256bs"/>
+-->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs_size.png" width="400" alt="sig_256bs_size" title="sig_256bs_size"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/sig_256bs_size.png" width="400" alt="sig_256bs_size" title="sig_256bs_size"/> -->
 <img src="./figs/pqc/sig_256bs_size.png" width="400" alt="sig_256bs_size" title="sig_256bs_size"/>
+-->
 
 #### Key-establishment
 
@@ -199,33 +211,39 @@ One operation of ECDH includes one scalar multiplication to the generator/base-p
 
 Comparison among 128-(classical-)bit security level algorithms:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/dec_enc_keygen_dh_128bs.png" width="400" alt="kem_128bs" title="kem_128bs"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/dec_enc_keygen_dh_128bs.png" width="400" alt="kem_128bs" title="kem_128bs"/> -->
 <img src="./figs/pqc/dec_enc_keygen_dh_128bs.png" width="400" alt="kem_128bs" title="kem_128bs"/>
+-->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/kem_128bs_size.png" width="400" alt="kem_128bs_size" title="kem_128bs_size"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/kem_128bs_size.png" width="400" alt="kem_128bs_size" title="kem_128bs_size"/> -->
 <img src="./figs/pqc/kem_128bs_size.png" width="400" alt="kem_128bs_size" title="kem_128bs_size"/>
+-->
 
 Comparison among 192-(classical-)bit security level algorithms:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/dec_enc_keygen_dh_192bs.png" width="400" alt="kem_192bs" title="kem_192bs"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/dec_enc_keygen_dh_192bs.png" width="400" alt="kem_192bs" title="kem_192bs"/> -->
 <img src="./figs/pqc/dec_enc_keygen_dh_192bs.png" width="400" alt="kem_192bs" title="kem_192bs"/>
+-->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/kem_192bs_size.png" width="400" alt="kem_192bs_size" title="kem_192bs_size"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/kem_192bs_size.png" width="400" alt="kem_192bs_size" title="kem_192bs_size"/> -->
 <img src="./figs/pqc/kem_192bs_size.png" width="400" alt="kem_192bs_size" title="kem_192bs_size"/>
+-->
 
 Comparison among 256-(classical-)bit security level algorithms:
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/dec_enc_keygen_dh_256bs.png" width="400" alt="kem_256bs" title="kem_256bs"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/dec_enc_keygen_dh_256bs.png" width="400" alt="kem_256bs" title="kem_256bs"/> -->
 <img src="./figs/pqc/dec_enc_keygen_dh_256bs.png" width="400" alt="kem_256bs" title="kem_256bs"/>
+-->
 
+<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/kem_256bs_size.png" width="400" alt="kem_256bs_size" title="kem_256bs_size"/>
 <!--
-<img src="https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pqc/kem_256bs_size.png" width="400" alt="kem_256bs_size" title="kem_256bs_size"/> -->
 <img src="./figs/pqc/kem_256bs_size.png" width="400" alt="kem_256bs_size" title="kem_256bs_size"/>
+-->
 
 ### Asymmetric-key cryptosystems (digital signatures and key-establishment)
 

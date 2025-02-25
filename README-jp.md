@@ -48,6 +48,15 @@
           chsh -s /bin/bash
           ```
 
+    * 耐量子計算機暗号の測定結果を得る場合:
+
+      1. Python 3 とその外部ライブラリまたはパッケージ `pyyaml`、 `tabulate` などをインストール
+
+<!--
+        > * `pyyaml` と `tabulate` は `./tmp/*/oqs-template/generate_oid_nid_table.py` で必要
+        > * 同じフォルダ内の generatehelpers.py と generate.py が、`jinja2` と `jinja2.ext` を import しているが、インストールは不要な模様
+-->
+
 1. スクリプトのダウンロードとフォルダへの移動
 
     ```bash
