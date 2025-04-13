@@ -155,11 +155,10 @@ measure () {
             # hmac-sha512, i.e. `openssl speed -hmac sha256` and so on.
             arr_evp_opt=("-hmac")
             algo=${algo#hmac-}  # sha*
-        # elif [[ ! "${algo}" =~ ^(ec|ed|ff|dsa|rsa|ml|falcon|sphincs|bike|hqc).* ]] && \
-        elif [[ ! "${algo}" =~ ^(ec|ed|ff|dsa|rsa).* ]] && \
+        elif [[ ! "${algo}" =~ ^(ec|ed|ff|dsa|rsa|ML-|SLH-DSA).* ]] && \
             [[ "${ARR_OQS_SIG[*]}" != *"${algo}"* ]] && \
             [[ "${ARR_OQS_KEM[*]}" != *"${algo}"* ]]; then
-            # not asymmetric algo
+            # not asymmetric algo, which are in the default and oqs providers.
             arr_evp_opt=("-evp")
         fi
 
@@ -256,7 +255,8 @@ measure () {
                 echo "         to use the same 'TABLE_TYPE' as the 'algo'."
             fi
         elif [ "${algo: 0:4}" == "ecdh" ] || [ "${algo: 0:4}" == "ffdh" ] || \
-             [[ "${ARR_OQS_KEM[*]}" == *"${algo}"* ]]; then
+             [[ "${ARR_OQS_KEM[*]}" == *"${algo}"* ]] || \
+             [ "${algo: 0:6}" == "ML-KEM" ]; then
             ## common among dh and enc/dec w/ or w/o keygen
             CUR_TABLE_TYPE="dec_enc_keygen_dh"
             if [ "${CUR_TABLE_TYPE}" != "${PRE_TABLE_TYPE}" ]; then
@@ -278,6 +278,8 @@ measure () {
                 INC_OQS_ALGO="yes"
                 #               keygen    encaps    decaps keygens/s  encaps/s  decaps/s
                 #   mlkem512 0.000015s 0.000010s 0.000009s   65849.0  100755.0  105835.9
+                awk -v ALGO="${algo}" '$1 == ALGO {printf "%-25s %10s %10s %10s %10s\n", $1,$7,$6,$5,"0"}' "${LOG}" >> "${DAT}"
+            elif [ "${algo: 0:6}" == "ML-KEM" ]; then
                 awk -v ALGO="${algo}" '$1 == ALGO {printf "%-25s %10s %10s %10s %10s\n", $1,$7,$6,$5,"0"}' "${LOG}" >> "${DAT}"
             fi
         else
@@ -611,8 +613,11 @@ plot_data () {
             "
     fi
 
-    # cf. http://gnuplot.info/
-    gnuplot -p -e "set terminal png; set output '${GRA_FILE}'; \
+    # NOTE:
+    #   - "noenhanced" is to support the name of OV (and UOV) that
+    #    includes '_', such as 'OV_I*'
+    #   - cf. http://gnuplot.info/
+    gnuplot -p -e "set terminal png noenhanced; set output '${GRA_FILE}'; \
         ${GRA_XTICS_ROTATE} \
         ${GRA_YTICS} \
         set ylabel 'Speed [${SPEED_UNIT}]'; \
@@ -714,7 +719,9 @@ optcheck_measure_plot () {
         # check_path "${ALLOWED_DIR}" "${OPENSSL}"
         #
         # -p /usr/bin/openssl
-        if [ "${OPENSSL: -7}" != openssl ]; then
+        # if [ "${OPENSSL: -7}" != openssl ]; then
+        # -p /usr/bin/openssl or *openssl.exe
+        if ! [[ "${OPENSSL: -7}" == openssl || "${OPENSSL: -11}" == openssl.exe ]]; then
             echo
             echo "Error: -p option accepts only the combination of 'openssl'"
             echo "       command and the path to it!"
@@ -765,7 +772,7 @@ optcheck_data_plot () {
         echo "Warning: -p option is ignored."
     fi
     if [ -n "${ARR_SPEED_OPT[*]}" ]; then
-        echßo
+        echo
         echo "Warning: -s option for \"${ARR_SPEED_OPT[*]}\" is ignored."
     fi
     if [ "$1" == "0" ] && [ ! -s "${DAT}" ]; then

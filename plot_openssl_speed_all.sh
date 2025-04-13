@@ -38,9 +38,8 @@ usage () {
     echo "     - 'openssl_type' is a form of"
     echo "       'openssl_tag[(-oqsprovider_type|${TAG_MINGW})'"
     echo "       such as "
-    echo "       'openssl-3.3.1-oqsprovider0.6.1-liboqs0.10.1'"
-    echo "       'openssl-3.4.0-alpha1-oqsprovider0.6.1-liboqs0.11.0-rc1'"
-    echo "       'openssl-3.3.1${TAG_MINGW}'"
+    echo "       'openssl-3.4.1-oqsprovider0.8.0-liboqs0.13.0-rc1'"
+    echo "       'openssl-3.5.0${TAG_MINGW}'"
     echo "       'master-oqsprovidermain-liboqsmain'"
     echo "     - In this case, 'openssl_type' is also used as"
     echo "       a folder name to work under the ./tmp folder."
@@ -108,14 +107,39 @@ openssl_type_to_oqs_branches () {
 plot_graph_asymmetric () {
     GRA_TITLE_APPENDIX="with ${OPENSSL_VER_NOSPACE}"
     ### Asymmetric-key algorithms:
+    ## Post-Quantum (@ default provider)
+    if [ -s "./${GRA_DIR}/pqc_kem_def.png" ]; then
+        echo
+        echo "Notice: './${GRA_DIR}/pqc_kem_def.png' already exists."
+        echo "Move/remove it to renew it."
+        echo
+    else
+        ${PLOT_SCRIPT} -o "./${GRA_DIR}/pqc_kem_def.png" ML-KEM-{512,768,1024}
+    fi
+:<<'# COMMENT_EOF'
+    # TODO:
+    #   Uncomment after "Error while initializing signing data structs"
+    #   in https://github.com/openssl/openssl/issues/27108 is fixed
+    if [ -s "./${GRA_DIR}/pqc_sig_def.png" ]; then
+        echo
+        echo "Notice: './${GRA_DIR}/pqc_sig_def.png' already exists."
+        echo "Move/remove it to renew it."
+        echo
+    else
+        ${PLOT_SCRIPT} -o "./${GRA_DIR}/pqc_sig_def.png" ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}
+    fi
+# COMMENT_EOF
+
     ## Post-Quantum (Open Quantum Safe)
     # NOTE: even if [ -n "${LIBOQS_VER}" ] is true,
     #       GRA_TITLE_APPENDIX does not require 'liboqs${LIBOQS_VER}'
     #       unless the graph includes any oqs algorithm.
     get_arr_oqs kem signature
     export ARR_OQS_SIG ARR_OQS_KEM
-    OQS_SIG_SEL_DAT="oqs_sig_sel.dat"
-    OQS_KEM_SEL_DAT="oqs_kem_sel.dat"
+    # OQS_SIG_SEL_DAT="oqs_sig_sel.dat"
+    # OQS_KEM_SEL_DAT="oqs_kem_sel.dat"
+    OQS_SIG_SEL_DAT="pqc_sig_sel.dat"
+    OQS_KEM_SEL_DAT="pqc_kem_sel.dat"
     if [ -n "${LIBOQS_VER}" ]; then
         ## OQS signatures
         #             keygen sign/s verify/s
@@ -130,18 +154,6 @@ plot_graph_asymmetric () {
         else
             ${PLOT_SCRIPT} -o "./${GRA_DIR}/oqs_sig_all.png" "${ARR_OQS_SIG[@]}"
         fi
-        # selections
-        if [ -s "./${GRA_DIR}/oqs_sig_all.dat" ]; then
-            # from all
-            awk '$1 ~ /(^[ \t]*#|sphincs|falcon|mldsa|mayo)/ {print}' "./${GRA_DIR}/oqs_sig_all.dat" > "./${GRA_DIR}/${OQS_SIG_SEL_DAT}"
-            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/oqs_sig_sel.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
-        else
-            # by measure-plot
-            ${PLOT_SCRIPT} -o "./${GRA_DIR}/oqs_sig_sel.png" \
-                sphincssha2128fsimple sphincssha2128ssimple sphincssha2192fsimple sphincsshake128fsimple \
-                falcon512 falconpadded512 falcon1024 falconpadded1024 \
-                mldsa44 mldsa65 mldsa87
-        fi
         ## OQS KEM
         #              keygen encaps/s decaps/s
         # mlkem512    70717.2 108815.3 112732.0
@@ -155,25 +167,83 @@ plot_graph_asymmetric () {
         else
             ${PLOT_SCRIPT} -o "./${GRA_DIR}/oqs_kem_all.png" "${ARR_OQS_KEM[@]}"
         fi
-        # selections
-        if [ -s "./${GRA_DIR}/oqs_kem_all.dat" ]; then
-            # from all
-            awk '$1 ~ /(^[ \t]*#|mlkem|bike|hqc)/ {print}' "./${GRA_DIR}/oqs_kem_all.dat" > "./${GRA_DIR}/${OQS_KEM_SEL_DAT}"
-            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/oqs_kem_sel.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
-        else
-            # by measure-plot
-            ${PLOT_SCRIPT} -o "./${GRA_DIR}/oqs_kem_sel.png" \
-                mlkem512 mlkem768 mlkem1024 \
-                bikel1 bikel3 bikel5 \
-                hqc128 hqc192 hqc256
-        fi
-        # comparison among mldsa's and mlkem's
-        awk '$1 ~ /^([ \t]*#|mldsa)/ {print}' "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" > "./${GRA_DIR}/ml_dsa_kem.dat"
-        awk '$1 ~ /^([ \t]*#|mlkem)/ {print}' "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" >> "./${GRA_DIR}/ml_dsa_kem.dat"
-        ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/ml_dsa_kem.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
         # plot with web data
         (cd "${GRA_DIR}" && ${PLOT_WITH_WEB_DATA})
     fi
+
+    # PQC selections
+    # SIG
+    rm -rf "./${GRA_DIR}/${OQS_SIG_SEL_DAT}"
+    # from oqs all
+    if [ -s "./${GRA_DIR}/oqs_sig_all.dat" ]; then
+        awk '$1 ~ /(^[ \t]*#|sphincs|falcon|mldsa|mayo)/ {print}' "./${GRA_DIR}/oqs_sig_all.dat" >> "./${GRA_DIR}/${OQS_SIG_SEL_DAT}"
+    fi
+    # from sig def
+    if [ -s "./${GRA_DIR}/pqc_sig_def.dat" ]; then
+        awk '$1 ~ /(^[ \t]*#|ML-DSA|SLH-DSA)/ {print}' "./${GRA_DIR}/pqc_sig_def.dat" >> "./${GRA_DIR}/${OQS_SIG_SEL_DAT}"
+    fi
+    # plot file
+    if [ -s "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" ]; then
+        if [ -n "${LIBOQS_VER}" ]; then
+            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/pqc_sig_sel.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
+        else
+            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/pqc_sig_sel.png" -t "${GRA_TITLE_APPENDIX}"
+        fi
+    fi
+:<<'# COMMENT_EOF'
+    # NOTE: Do not remove for debug
+    # by measure-plot
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/pqc_sig_sel.png" \
+        sphincssha{2128fsimple,2128ssimple,2192fsimple,ke128fsimple} \
+        falcon{512,padded512,1024,padded1024} \
+        mldsa{44,65,87} mayo{1,2,3,5} \
+        # TODO:
+        #   Uncomment after "Error while initializing signing data structs"
+        #   is fixed
+        # ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f} \
+# COMMENT_EOF
+
+    # KEM
+    rm -rf "./${GRA_DIR}/${OQS_KEM_SEL_DAT}"
+    # from oqs all
+    if [ -s "./${GRA_DIR}/oqs_kem_all.dat" ]; then
+        awk '$1 ~ /(^[ \t]*#|mlkem|bike|hqc)/ {print}' "./${GRA_DIR}/oqs_kem_all.dat" >> "./${GRA_DIR}/${OQS_KEM_SEL_DAT}"
+    fi
+    # from kem def
+    if [ -s "./${GRA_DIR}/pqc_kem_def.dat" ]; then
+        awk '$1 ~ /(^[ \t]*#|ML-KEM)/ {print}' "./${GRA_DIR}/pqc_kem_def.dat" >> "./${GRA_DIR}/${OQS_KEM_SEL_DAT}"
+    fi
+    # plot file
+    if [ -s "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" ]; then
+        if [ -n "${LIBOQS_VER}" ]; then
+            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/pqc_kem_sel.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
+        else
+            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/pqc_kem_sel.png" -t "${GRA_TITLE_APPENDIX}"
+        fi
+    fi
+:<<'# COMMENT_EOF'
+    # NOTE: Do not remove for debug
+    # by measure-plot
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/pqc_kem_sel.png" \
+        ML-KEM-{512,768,1024} mlkem{512,768,1024} \
+        bikel{1,3,5} hqc{128,192,256}
+        # mlkem512 mlkem768 mlkem1024 \
+        # bikel1 bikel3 bikel5 \
+        # hqc128 hqc192 hqc256
+# COMMENT_EOF
+
+    # comparison among mldsa's and mlkem's
+    if [ -s "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" ] && [ -s "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" ] ; then
+        rm -rf "./${GRA_DIR}/ml_dsa_kem.dat"
+        awk '$1 ~ /^([ \t]*#|ML-DSA|mldsa)/ {print}' "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" >> "./${GRA_DIR}/ml_dsa_kem.dat"
+        awk '$1 ~ /^([ \t]*#|ML-KEM|mlkem)/ {print}' "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" >> "./${GRA_DIR}/ml_dsa_kem.dat"
+        if [ -n "${LIBOQS_VER}" ]; then
+            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/ml_dsa_kem.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
+        else
+            ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/ml_dsa_kem.png" -t "${GRA_TITLE_APPENDIX}"
+        fi
+    fi
+
     ## RSA
     # all
     if [ -s "./${GRA_DIR}/rsa.png" ]; then
@@ -321,10 +391,12 @@ plot_graph_asymmetric () {
         # awk '$1 ~ /ecdh\((nistp521|X448)\)/ {print}' "./${GRA_DIR}/dh_all.dat" >> "./${GRA_DIR}/dec_enc_keygen_dh_224bs.dat"
         awk '$1 ~ /ecdh\(nistp521\)/ {print}' "./${GRA_DIR}/dh_all.dat" >> "./${GRA_DIR}/dec_enc_keygen_dh_256bs.dat"
     fi
-    if [ -s "./${GRA_DIR}/oqs_kem_all.dat" ]; then
-        awk '$1 == "mlkem512"' "./${GRA_DIR}/oqs_kem_all.dat" >> "./${GRA_DIR}/dec_enc_keygen_dh_128bs.dat"
-        awk '$1 == "mlkem768"' "./${GRA_DIR}/oqs_kem_all.dat" >> "./${GRA_DIR}/dec_enc_keygen_dh_192bs.dat"
-        awk '$1 == "mlkem1024"' "./${GRA_DIR}/oqs_kem_all.dat" >> "./${GRA_DIR}/dec_enc_keygen_dh_256bs.dat"
+    if [ -s "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" ]; then
+        awk '$1 ~ /(ML-KEM-|mlkem)512/' "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" >> "./${GRA_DIR}/dec_enc_keygen_dh_128bs.dat"
+        awk '$1 ~ /(ML-KEM-|mlkem)768/' "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" >> "./${GRA_DIR}/dec_enc_keygen_dh_192bs.dat"
+        awk '$1 ~ /(ML-KEM-|mlkem)1024/' "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" >> "./${GRA_DIR}/dec_enc_keygen_dh_256bs.dat"
+    fi
+    if [ -n "${LIBOQS_VER}" ]; then
         ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/dec_enc_keygen_dh_128bs.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
         ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/dec_enc_keygen_dh_192bs.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
         ${PLOT_SCRIPT_FOR_FILE} -o "./${GRA_DIR}/dec_enc_keygen_dh_256bs.png" -t "${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
@@ -603,7 +675,8 @@ set_openssl_tagged () {
                     tag="${tag_candidate}"
                 fi
                 git_url="https://github.com/openssl/openssl.git"
-                ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
+                # ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
+                ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type_dir}"
                 ;;
             libressl|LibreSSL|LIBRESSL)
                 tag="${tag_candidate}"

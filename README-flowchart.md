@@ -88,10 +88,10 @@ flowchart TB
   node_10("end")
   node_11["create data file"]
   node_1 --> node_2
-  node_2 --"crypto-algorithm(s) in args \n (measure plot)"--> sub1
+  node_2 --"crypto-algorithm(s) in args (measure plot)"--> sub1
   node_3 -.-> node_6
   node_7 -.-> node_5
-  node_2 --"no crypto-algorithm in args\n(data plot)"--> node_7
+  node_2 --"no crypto-algorithm in args (data plot)"--> node_7
   node_8 --"yes"--> sub1_2
   node_3 --> node_10
   node_5 -.-> node_3

@@ -4,13 +4,30 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.0.2] -->
+<!-- ## [Unreleased 1.1.1] -->
 
-## [Unreleased]
+## [1.1.0]
 
 ### Added
 
 - A solution to `ModuleNotFoundError` in README.
+- PQCs in the default provider for OpenSSL 3.5.0 and newer in
+  `pqc_{kem,sig}_def.{log,dat}` and so on, though there still exist
+  the following issues:
+  - `openssl speed` for `ML-DSA-{44,65,87}` and
+    `SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}` still causes
+    [this error](https://github.com/openssl/openssl/issues/27108) at least up to OpenSSL 3.6.0-dev.
+  - PQCs in the oqsprovider are available only with oqsprover newer than
+    0.8.0 (at least `ff34add`).
+  - ML-KEM in the default provider is slower than mlkem in the oqsprovider.
+
+### Changed
+
+- 'oqs' of `oqs_{kem,sig}_sel.{log,dat}` to 'pqc' and moved the processes for `pqc_{kem,sig}_sel.{log,dat}` outside of 'if [ -n "${LIBOQS_VER}" ];' to include PQCs in both the default and oqs providers.
+
+### Fixed
+
+- Errors of `plot_openssl_speed_all.sh <openssl_tag>-minwg` (caused after the support of oqsprovider).
 
 ## [1.0.1]
 
