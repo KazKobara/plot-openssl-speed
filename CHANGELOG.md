@@ -28,6 +28,8 @@ All notable changes, such as backward incompatibilities, will be documented in t
 ### Fixed
 
 - Errors of `plot_openssl_speed_all.sh <openssl_tag>-minwg` (caused after the support of oqsprovider).
+- Errors of `plot_openssl_speed.sh -p` option for `plot_openssl_speed_all.sh`
+  for the openssl command in the PATH.
 
 ## [1.0.1]
 

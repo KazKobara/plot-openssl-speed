@@ -453,10 +453,12 @@ plot_graph_symmetric () {
     ###   - KECCAK derived algorithms
     # 128 bit security
     # ../../plot_openssl_speed.sh -o ./graphs/hmac_kmac_128bs.png -p ./openssl/apps/openssl SHAKE128 KECCAK-KMAC128 kmac128-no-evp sha3-256 hmac-sha3-256
-    ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_128bs.png" -p ./openssl/apps/openssl SHAKE128 KECCAK-KMAC128 kmac128-no-evp sha3-256 hmac-sha3-256
+    # ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_128bs.png" -p ./openssl/apps/openssl SHAKE128 KECCAK-KMAC128 kmac128-no-evp sha3-256 hmac-sha3-256
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_128bs.png" SHAKE128 KECCAK-KMAC128 kmac128-no-evp sha3-256 hmac-sha3-256
     # 256 bit security
     # ../../plot_openssl_speed.sh -o ./graphs/hmac_kmac_256bs.png -p ./openssl/apps/openssl SHAKE256 KECCAK-KMAC256 kmac256-no-evp sha3-512 hmac-sha3-512
-    ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_256bs.png" -p ./openssl/apps/openssl SHAKE256 KECCAK-KMAC256 kmac256-no-evp sha3-512 hmac-sha3-512
+    # ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_256bs.png" -p ./openssl/apps/openssl SHAKE256 KECCAK-KMAC256 kmac256-no-evp sha3-512 hmac-sha3-512
+    ${PLOT_SCRIPT} -o "./${GRA_DIR}/keccak_256bs.png" SHAKE256 KECCAK-KMAC256 kmac256-no-evp sha3-512 hmac-sha3-512
     ####################################################################
 }
 

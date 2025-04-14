@@ -723,13 +723,13 @@ optcheck_measure_plot () {
         # -p /usr/bin/openssl or *openssl.exe
         if ! [[ "${OPENSSL: -7}" == openssl || "${OPENSSL: -11}" == openssl.exe ]]; then
             echo
-            echo "Error: -p option accepts only the combination of 'openssl'"
+            echo "Error: '-p ${OPENSSL}' option accepts only the combination of 'openssl'"
             echo "       command and the path to it!"
             echo
             exit 2
         fi
         # to avoid suspicious input
-        if [ ! -s "${OPENSSL}" ]; then
+        if [ "${OPENSSL}" != openssl ] && [ "${OPENSSL}" != openssl.exe ] && [ ! -s "${OPENSSL}" ]; then
             echo
             echo "Error: '${OPENSSL}' given by -p option does not exist!"
             echo
