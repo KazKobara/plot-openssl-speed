@@ -2,7 +2,9 @@
 
 [English <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/gb.svg" width="20" alt="English" title="English"/>](./README.md)
 
-* v1.0.0 で耐量子計算機暗号の測定結果のグラフ描画を可能にしました。
+* v1.2 以降でFIPSプロバイダーの測定結果のグラフ描画を可能にしました。
+  * FIPS validated バージョンなどの情報は[こちら](https://openssl-library.org/source/)。
+* v1 以降で耐量子計算機暗号の測定結果のグラフ描画を可能にしました。
 
 本プログラム/スクリプトは、OpenSSL及びその互換プログラム/ライブラリ(LibreSSLなど)の使用者/開発者が、そこで利用可能な暗号アルゴリズムの処理速度を手元の環境で測定し結果を比較表示したり、Web上で公開されている処理速度やサイズ情報などと比較する作業を容易にするためのものです。
 暗号アルゴリズムを128/192/256ビットセキュリティへ移行する際や耐量子計算機暗号へ移行する際の判断材料を得ることができます。
@@ -13,14 +15,15 @@
     * Debian/Ubuntu の場合:
 
         ```console
-        sudo apt install gnuplot git openssl make gcc gcc-mingw-w64-x86-64 cmake ninja autoconf
+        sudo apt install gnuplot git openssl make gcc gcc-mingw-w64-x86-64 cmake ninja autoconf perl
         ```
 
         > * `openssl` は実行PATH上の openssl を使う場合に必要
         > * `make gcc` は openssl をソースファイルから make する場合に必要
-        > * `gcc-mingw-w64-x86-64` は MinGW で openssl.exe を作る場合に必要
+        > * `gcc-mingw-w64-x86-64` は Mingw-w64 で openssl.exe を作る場合に必要
         > * `cmake` と `ninja` は `oqsprovider`、`liboqs` などをビルドする場合に必要
         > * `autoconf` は `LibreSSL` git repo の `configure.ac` から `configure` を作成する場合に必要
+        > * `perl` はソースファイルから生成された FIPS プロバイダーを実行する場合に必要(Mingw-w64 の場合は不要)
 
     * macOS の場合:
       1. Command Line Tools のインストール
@@ -34,19 +37,15 @@
       1. [Homebrew](https://brew.sh/)をインストールし、以下を実行
 
           ```zsh
-          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf
+          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf automake perl
           ```
 
           > * `coreutils` は `realpath` コマンドをインストールするために必要
-          > * `mingw-w64` は MinGW で openssl.exe を作る場合に必要
+          > * `mingw-w64` は Mingw-w64 で openssl.exe を作る場合に必要
           > * `cmake` と `ninja` は `oqsprovider`、`liboqs` などをビルドする場合に必要
           > * `autoconf` は `LibreSSL` git repo の `configure.ac` から `configure` を作成する場合に必要
-
-      1. Zsh で問題が生じた場合には Bash に変更
-
-          ```zsh
-          chsh -s /bin/bash
-          ```
+          > * `automake` は `LibreSSL` <!--(少なくとも libressl-v4.1.0 )-->をビルドする場合に必要
+          > * `perl` はソースファイルから生成された FIPS プロバイダーを実行する場合に必要(Mingw-w64 の場合は不要)
 
     * 耐量子計算機暗号の測定結果を得る場合:
 
@@ -95,7 +94,7 @@
 > * オプションの `-s 1` は、各暗号アルゴリズムの測定時間を1秒に短縮するためのものです。
 >   * 全体の傾向をつかめ、バラツキの小さな計測を行う際には指定せずご実行下さい。
 >   * 以下の図は指定せずに実行した結果になります。
-> * LibreSSL に対しては、(少なくとも 2.8.3 の時点においては) `openssl speed` コマンドが `-seconds` オプションを有しておらずエラーとなるため指定しても無視されます。
+> * LibreSSL に対しては、(少なくとも 4.1.0 の時点において) `openssl speed` コマンドが `-seconds` オプションを有しておらずエラーとなるため指定しても無視されます。
 
 上記コマンドを実行すると、以下のように表示メッセージの最後に、グラフ画像ファイルやその元になったデータファイルなどが格納されたフォルダ情報が表示されます。
 
@@ -125,7 +124,7 @@ Results are in:
 
 ## 指定したバージョン(tag)をコンパイルし得たopensslコマンドの測定結果を描画する場合
 
-例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.7` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの測定結果と、それを MinGW (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での測定結果も図示する場合。
+例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.7` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの測定結果と、それを Mingw-w64 (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での測定結果も図示する場合。
 
 ```bash
 ./plot_openssl_speed_all.sh -s 1 openssl-3.0.7 openssl-3.0.7-mingw
@@ -160,7 +159,7 @@ master/main ブランチの場合は、以下のように引数(openssl-type)を
 ./plot_openssl_speed_all.sh -s 1 master-oqsprovidermain-liboqsmain
 ```
 
-> v1.0.0 時点では、引数(openssl-type)に liboqs 及び oqs-provider が含まれている場合、`-mingw`(MinGW でのクロスコンパイル)と組み合わせることはできません。
+> v1.0.0 時点では、引数(openssl-type)に liboqs 及び oqs-provider が含まれている場合、`-mingw`(Mingw-w64 でのクロスコンパイル)と組み合わせることはできません。
 
 ## グラフから読み取れることと補足
 
@@ -604,7 +603,6 @@ plot_openssl_speed.sh -h
 aes-128-ccm     202973.97k   588256.58k  1065011.71k  1314283.52k  1346633.73k  1381728.26k
 hmac(sha512)     23408.12k    90165.99k   249721.98k   538953.37k   756375.73k   782985.02k
 sha256           30840.78k    88357.72k   199311.27k   292801.60k   334301.56k   319321.27k
-
 ```
 
 ### "sig_ver_keygen" TABLE_TYPE
@@ -888,6 +886,24 @@ openssl コマンドの version により実装されていないオプション
 ### "./apps/openssl.exe: Invalid argument"と表示される
 
 セキュリティソフト等で exe ファイルの実行がブロックされていないか画面等をご確認下さい。ブロックされていた場合、当該ブロックのみを解除し、コマンドを再実行下さい。
+
+<!--
+### macOS上でのシェルスクリプト実行に問題が生じた場合
+
+以下を試してみる。
+
+* Zsh で実行:
+
+  ```zsh
+  zsh <shellscript_file_name>.sh
+  ```
+
+* Bash に変更:
+
+  ```zsh
+  chsh -s /bin/bash
+  ```
+-->
 
 ## リンク
 

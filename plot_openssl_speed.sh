@@ -90,6 +90,75 @@ usage () {
 }
 
 ##
+# @brief        Extract RSA's "dec_enc_keygen_dh" data from ${LOG}.
+# @param[in]    $1 (${LOG}, RSA speed's log-file-name with the path)
+# @param[in]    $2 (data-file-name with the path)
+# @param[in]    $3 (rsa_num_field)
+# @param[in]    $4 (rsa_num_field_enc)
+# @param[in]    $5 (rsa_num_field_sig)
+# @param[out]   formatted-data to $2
+# @param[out]   global TO_NOTICE
+extract_rsa_enc (){
+    local ALGO3="rsa"
+    local rsa_num_field="$3"
+    local rsa_num_field_enc="$4"
+    local rsa_num_field_sig="$5"
+    TO_NOTICE="no"  # or "yes"
+    # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
+    if [ "${rsa_num_field_enc}" == "6" ]; then
+        # enc w/ keygen
+        # awk '(($1=="keygen")&&($2=="encaps")&&($3=="decaps")),(($1=="keygen")&&($2=="signs")&&($3=="verify")) {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$7,$6,$5,"0"}}' "$1" >> "$2"
+        awk '(($2=="encaps")&&($3=="decaps")),(($2=="signs")&&($3=="verify")) {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$7,$6,$5,"0"}}' "$1" >> "$2"
+    elif [ "${rsa_num_field}" == "11" ]; then
+        # enc w/o keygen
+        awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s %10s\n",$1$2,$11,$10,"0","0"}' "$1" >> "$2"
+    elif [ "${rsa_num_field_sig}" == "6" ]; then
+        # sig w/ keygen
+        awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5,"0"}}' "$1" >> "$2"
+        TO_NOTICE="yes"
+    elif [ "${rsa_num_field}" == "7" ]; then
+        # sig w/o keygen
+        awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s %10s\n",$1$2,$6,$7,"0","0"}' "$1" >> "$2"
+        TO_NOTICE="yes"
+    fi
+}
+
+
+##
+# @brief        Extract RSA's "sig_ver_keygen" data from ${LOG}.
+# @param[in]    $1 (${LOG}, RSA speed's log-file-name with the path)
+# @param[in]    $2 (data-file-name with the path)
+# @param[in]    $3 (rsa_num_field)
+# @param[in]    $4 (rsa_num_field_enc)
+# @param[in]    $5 (rsa_num_field_sig)
+# @param[out]   formatted-data to $2
+# @param[out]   global TO_NOTICE
+extract_rsa_sig (){
+    local ALGO3="rsa"
+    local rsa_num_field="$3"
+    local rsa_num_field_enc="$4"
+    local rsa_num_field_sig="$5"
+    TO_NOTICE="no"  # or "yes"
+    # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
+    if [ "${rsa_num_field_sig}" == "6" ]; then
+        # sig w keygen
+        awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5,"0"}}' "$1" >> "$2"
+    elif [ "${rsa_num_field}" == "11" ]; then
+        # sig w/o keygen
+        awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n",$1$2,$8,$9,"0"}' "$1" >> "$2"
+    elif [ "${rsa_num_field}" == "7" ]; then
+        # sig w/o keygen
+        awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n",$1$2,$6,$7,"0"}' "$1" >> "$2"
+    elif [ "${rsa_num_field_enc}" == "6" ]; then
+        # enc w keygen
+        awk '(($1=="keygen")&&($2=="encaps")&&($3=="decaps")),(($1=="keygen")&&($2=="signs")&&($3=="verify")) {if ($1 ~ "rsa") {printf "%-25s %1
+0s %10s %10s\n",$1,$7,$6,$5}}' "$1" >> "$2"
+        TO_NOTICE="yes"
+    fi
+}
+
+
+##
 # @brief        Run `openssl speed` and save the results to ${DAT}.
 # @param[in]    list of algorithms
 # @param[out]   Write to ${DAT}
@@ -97,9 +166,11 @@ usage () {
 #               global INC_OQS_ALGO ("no"/"yes")
 measure () {
     echo
-    echo "----- Measuring the speed -----" 
-    if  [[ "${OPENSSL_VER}" != "OpenSSL 3."* ]] && \
-        [[ "${OPENSSL_VER}" != "OpenSSL 1."* ]] && \
+    echo "----- Measuring the speed -----"
+    # if  [[ "${OPENSSL_VER}" != "OpenSSL 3."* ]] && \
+    #     [[ "${OPENSSL_VER}" != "OpenSSL 1."* ]] && \
+    if  [[ "${OPENSSL_VER}" == "OpenSSL 0."* ]] || \
+        [[ "${OPENSSL_VER}" != "OpenSSL"* ]] && \
         [[ "${OPENSSL_VER}" != "LibreSSL"* ]]; then
             echo "Warning: ${OPENSSL_VER} is not tested!"
             echo "         Edit 'measure()' in '${COMMAND}' to adjust options"
@@ -112,6 +183,11 @@ measure () {
     # echo "Updating '${LOG}' and '${DAT}'."
     echo "Updating '${DAT}'."
     rm -f "${DAT}"
+    if  [[ "${DAT}" == *"rsa.dat" ]]; then
+        DAT_RSA_ENC="${DAT%rsa.dat}rsa_enc.dat"
+        echo "Updating '${DAT_RSA_ENC}' as well."
+        rm -f "${DAT_RSA_ENC}"
+    fi
     # same dir as ${DAT}, e.g.
     #   "./graphs/test.dat" -> "./graphs/"
     #   "test.dat" -> ""
@@ -125,7 +201,7 @@ measure () {
 
     cou=$((0))
     # OQS
-    # if not defined in plot_graphs() of ${COMMAND}_all.sh
+    # if not defined (in plot_graph_asymmetric() of ${COMMAND}_all.sh etc.)
     if [ -z ${ARR_OQS_SIG+X} ]; then
         get_arr_oqs signature
     fi
@@ -166,8 +242,6 @@ measure () {
         #        change the table parsers.
         # shellcheck disable=SC2145  # intentional array[@] copying the next command
         echo "${OPENSSL} speed ${ARR_SPEED_OPT[@]} ${arr_evp_opt[@]} $algo"
-        # echo "${OPENSSL} speed ${ARR_SPEED_OPT[*]} ${arr_evp_opt[*]} $algo"
-        # ${OPENSSL} speed "${ARR_SPEED_OPT[@]}" "${arr_evp_opt[@]}" "${algo}" > >(tee "${LOG}") || { echo "Warning: skipped '${algo}'"; continue; }
         ${OPENSSL} speed "${ARR_SPEED_OPT[@]}" "${arr_evp_opt[@]}" "${algo}" > >(tee "${LOG}") 2>&1 || { echo "Warning: skipped '${algo}'"; continue; }
         # NOTE: Remove "\r" since POSIX awk regards "\r" as a character.
         #       Comment out the following three lines to edit "${LOG}" and
@@ -177,6 +251,7 @@ measure () {
             tr -d "\r" < "${LOG}" 1<> "${LOG}"
         fi
 
+        # set CUR_TABLE_TYPE and extract speed data
         local CUR_TABLE_TYPE
         # local CUR_TABLE_TYPE="kbytes"  # default
         # override CUR_TABLE_TYPE="kbytes"
@@ -210,49 +285,98 @@ measure () {
                 awk -v REGEXP="^${algo}" '$1 ~ REGEXP {printf "%-25s %10s %10s %10s\n", $1,$6,$7,$5}' "${LOG}" >> "${DAT}"
             fi
         elif [ "${ALGO3}" == "rsa" ]; then
-            # OpenSSL 1
+            # --- rsa_num_field==7 (w/o keygen) ---
+            # OpenSSL 1 etc.
             #                   sign    verify    sign/s verify/s
-            # rsa  512 bits 0.000040s 0.000003s  25224.3 393957.1
-            # OpenSSL 3
-            #             sign    verify    encrypt   decrypt   sign/s verify/s  encr./s  decr./s
+            # rsa  512 bits 0.000040s 0.000003s  25224.3 393957.1  # rsa_num_field
+            #
+            # --- rsa_num_field==11 (w/o keygen) ---
+            # OpenSSL 3 etc.
+            #                    sign    verify    encrypt   decrypt   sign/s verify/s  encr./s  decr./s
             # rsa   512 bits 0.000041s 0.000002s 0.000003s 0.000049s  24660.6 425189.4 338336.9  20222.1
-            local rsa_num_field
+            #
+            # --- rsa_num_field_enc==6 && rsa_num_field_sig==6 (w/ keygen) ---
+            # OpenSSL 3.5 fips-provider rsa<bits>
+            #               keygen    encaps    decaps keygens/s  encaps/s  decaps/s  # rsa_num_field_enc
+            #    rsa7680 11.820000s 0.000361s 0.050000s       0.1    2770.0      20.0
+            #               keygen     signs    verify keygens/s    sign/s  verify/s  # rsa_num_field_sig
+            #    rsa7680 17.970000s 0.052632s 0.000294s       0.1      19.0    3403.0
+            #
+            # --- rsa_num_field==11 && rsa_num_field_enc==6 && rsa_num_field_sig==6 ---
+            # OpenSSL 3.5 default-provider
+            #                   sign    verify    encrypt   decrypt   sign/s verify/s  encr./s  decr./s
+            # rsa  1024 bits 0.000127s 0.000008s 0.000009s 0.000144s   7875.8 117815.0 114327.8   6936.4
+            # rsa  3072 bits 0.002865s 0.000052s 0.000050s 0.002469s    349.0  19078.0  20088.9    405.0
+            #                   keygen    encaps    decaps keygens/s  encaps/s  decaps/s
+            #        rsa1024 0.012658s 0.000011s 0.000131s      79.0   92873.5    7652.0
+            #        rsa3072 0.238000s 0.000056s 0.002457s       4.2   17705.0     407.0
+            #                   keygen     signs    verify keygens/s    sign/s  verify/s
+            #        rsa1024 0.012346s 0.000115s 0.000008s      81.0    8692.0  126870.0
+            #        rsa3072 0.248000s 0.002469s 0.000054s       4.0     405.0   18644.0
+            #
+            local rsa_num_field rsa_num_field_enc rsa_num_field_sig
             rsa_num_field=$(awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP { print NF}' "${LOG}" | uniq)
-            if [ "${rsa_num_field}" != "7" ] && [ "${rsa_num_field}" != "11" ]; then
+            rsa_num_field_enc=$(awk '{if (($1=="keygen")&&($2=="encaps")&&($3=="decaps")) { print NF }}' "${LOG}" | uniq)
+            rsa_num_field_sig=$(awk '{if (($1=="keygen")&&($2=="signs")&&($3=="verify")) { print NF }}' "${LOG}" | uniq)
+            # echo "rsa_num_field = $rsa_num_field"
+            if { [ "${rsa_num_field}" == "" ] || [ "${rsa_num_field}" == "0" ];} && \
+                    { [ "${rsa_num_field_enc}" == "" ] || [ "${rsa_num_field_enc}" == "0" ];} && \
+                    { [ "${rsa_num_field_sig}" == "" ] || [ "${rsa_num_field_sig}" == "0" ];}; then
+                echo
+                echo "Notice: no rsa data in '${LOG}'."
+                # echo
+                continue
+            fi
+            if [ "${rsa_num_field}" != "7" ] && [ "${rsa_num_field}" != "11" ] && \
+                    [ "${rsa_num_field_enc}" != "6" ] && [ "${rsa_num_field_sig}" != "6" ]; then
                 echo "Error: unknown data format for ${algo}!"
                 echo "       Add it as a new one."
                 exit 3
             fi
             if [ ${cou} -ge 1 ] && [ "${PRE_TABLE_TYPE}" == "dec_enc_keygen_dh" ]; then
+                # follow the previous table type
                 CUR_TABLE_TYPE="dec_enc_keygen_dh"
-                if [ "${CUR_TABLE_TYPE}" != "${PRE_TABLE_TYPE}" ]; then
-                    echo -e "#\n# asymmetric_algorithm         dec/s      enc/s   keygen/s       dh/s" >> "${DAT}"
-                fi
-                # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
-                if [ "${rsa_num_field}" == "7" ]; then
-                    awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s %10s\n", $1$2, $6,$7,"0","0"}' "${LOG}" >> "${DAT}"
+                extract_rsa_enc "${LOG}" "${DAT}" "${rsa_num_field}" "${rsa_num_field_enc}" "${rsa_num_field_sig}"
+                if [ "${TO_NOTICE}" == "yes" ]; then
                     echo
-                    echo "Note: In '${DAT}', 'dec' and 'enc' of '${algo}' are 'sign' and 'verify' of it."
-                elif [ "${rsa_num_field}" == "11" ]; then
-                    awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s %10s\n", $1$2, $11,$10,"0","0"}' "${LOG}" >> "${DAT}"
+                    echo "Notice: in '${DAT}', 'dec' and 'enc' of '${algo}' are 'sign' and 'verify' of it."
                 fi
             else
+                # default
                 CUR_TABLE_TYPE="sig_ver_keygen"
-                if [ "${CUR_TABLE_TYPE}" != "${PRE_TABLE_TYPE}" ]; then
+                if [ ${cou} -ge 1 ] && [ "${CUR_TABLE_TYPE}" != "${PRE_TABLE_TYPE}" ]; then
+                    # add header
                     echo -e "#\n# asymmetric_algorithm        sign/s   verify/s   keygen/s" >> "${DAT}"
+                    if [ -n "${DAT_RSA_ENC}" ]; then
+                        echo -e "#\n# asymmetric_algorithm         dec/s      enc/s   keygen/s" >> "${DAT_RSA_ENC}"
+                    fi
                 fi
-                # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
-                if [ "${rsa_num_field}" == "7" ]; then
-                    awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n", $1$2,$6,$7,"0"}' "${LOG}" >> "${DAT}"
-                elif [ "${rsa_num_field}" == "11" ]; then
-                    awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n", $1$2,$8,$9,"0"}' "${LOG}" >> "${DAT}"
+                # "sig_ver_keygen" to ${DAT}
+                extract_rsa_sig "${LOG}" "${DAT}" "${rsa_num_field}" "${rsa_num_field_enc}" "${rsa_num_field_sig}"
+                if [ "${TO_NOTICE}" == "yes" ]; then
+                    echo
+                    echo "Notice: in '${DAT}', 'sign' and 'verify' of '${algo}' are 'dec' and 'enc' of it."
+                fi
+                echo "DAT_RSA_ENC: ${DAT_RSA_ENC}"
+                if [ -n "${DAT_RSA_ENC}" ]; then
+                    # "dec_enc_keygen_dh" to ${DAT_RSA_ENC}
+                    extract_rsa_enc "${LOG}" "${DAT_RSA_ENC}" "${rsa_num_field}" "${rsa_num_field_enc}" "${rsa_num_field_sig}"
+                    if [ "${TO_NOTICE}" == "yes" ]; then
+                        echo
+                        echo "Notice: in '${DAT_RSA_ENC}', 'dec' and 'enc' of '${algo}' are 'sign' and 'verify' of it."
+                    fi
                 fi
             fi
-            if [ ${cou} -eq 0 ] && [ "${rsa_num_field}" == "11" ]; then
+            if [ ${cou} -eq 0 ] && {\
+                    [ "${rsa_num_field}" == "11" ] || {\
+                        [ "${rsa_num_field_enc}" == "6" ] && \
+                        [ "${rsa_num_field_sig}" == "6" ]\
+                    ;}\
+                ;}; then
                 echo "Warning: 'TABLE_TYPE' of '${algo}' in '${DATA}'"
                 echo "         is assumed to be '${CUR_TABLE_TYPE}'."
                 echo "         Place '${algo}' after another 'algo'"
-                echo "         to use the same 'TABLE_TYPE' as the 'algo'."
+                echo "         to use the same 'TABLE_TYPE' as the previous 'algo'."
             fi
         elif [ "${algo: 0:4}" == "ecdh" ] || [ "${algo: 0:4}" == "ffdh" ] || \
              [[ "${ARR_OQS_KEM[*]}" == *"${algo}"* ]] || \
@@ -319,9 +443,6 @@ measure () {
         fi
 
         # Set then check TABLE_TYPE's.
-        # if [ ${cou} -eq 0 ]; then
-        PRE_TABLE_TYPE=${CUR_TABLE_TYPE}
-        # el
         if [ ${cou} -ge 1 ] && [ "${PRE_TABLE_TYPE}" != "${CUR_TABLE_TYPE}" ] ; then
             # exception
             if [[ "${PRE_TABLE_TYPE}" == "sig_ver_keygen" && \
@@ -341,6 +462,7 @@ measure () {
                 # exit 2
             fi
         fi
+        PRE_TABLE_TYPE=${CUR_TABLE_TYPE}
         cou=$((cou+1))
     done
     if [ "${SIG_ENC_MIX}" == "yes" ]; then
@@ -412,7 +534,8 @@ set_gra_title () {
         if [ "${PLOT_DATA_FILE}" == "1" ]; then
             GRA_TITLE_APPENDIX=""
         else
-            OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+            # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+            openssl_ver_nospace_from_command
             GRA_TITLE_APPENDIX="with ${OPENSSL_VER_NOSPACE}"
             if [ "${INC_OQS_ALGO}" == "yes" ]; then
                 [ -z "${LIBOQS_VER}" ] && liboqs_ver_from_command
@@ -582,20 +705,21 @@ plot_data () {
     declare -i NUM_OF_RECORDS
     # num="$(awk '(! /^[ \t]*#/) && (NF > 1) {n+=1} END{print n}' "${DAT}" | uniq)"
     NUM_OF_RECORDS="$(awk '(! /^[ \t]*#/) && (NF > 1) {n+=1} END{print n}' "${DAT}")"
+    GRA_KEY_POS="center"  # default
     echo "# of records: ${NUM_OF_RECORDS}"
     if [ "${NUM_OF_RECORDS}" -ge 14 ]; then
         GRA_XTICS_ROTATE="set xtics rotate by -90;"
-        GRA_KEY_POS="center"
+        # GRA_KEY_POS="center"
     elif [ "${NUM_OF_RECORDS}" -ge 6 ]; then
         # GRA_XTICS_ROTATE="set xtics rotate by -60 offset first -0.3,0;"
         GRA_XTICS_ROTATE="set xtics rotate by -45 offset first -0.4,0;"
-        GRA_KEY_POS="center"
+        # GRA_KEY_POS="center"
     elif [ "${NUM_OF_RECORDS}" -ge 3 ]; then
         GRA_XTICS_ROTATE="set xtics rotate by ${XTICS_ROTATE_ANGLE} offset first -0.4,0;"
-        GRA_KEY_POS="center"
+        # GRA_KEY_POS="center"
     else
         GRA_XTICS_ROTATE=""
-        GRA_KEY_POS="right"
+        # GRA_KEY_POS="right"
     fi
 
     ## Graph title
@@ -634,37 +758,40 @@ plot_data () {
 # @param[in]    OPENSSL
 # @param[out]   DYLD_LIBRARY_PATH or LD_LIBRARY_PATH
 add_ld_lib_path (){
+    # neither openssl in the PATH nor <PATH>/openssl.exe 
     if [ "${OPENSSL}" != "openssl" ] && \
-    [ "${OPENSSL}" == "${OPENSSL%.exe}" ]; then
-        # macOS
-        # Add the path to lib{ssl,crypto}.3.dylib in ./tmp/openssl-*.*.*/ .
+       [ "${OPENSSL}" == "${OPENSSL%.exe}" ]; then  # not <PATH>/*.exe
         echo "OPENSSL: ${OPENSSL}"
         echo "PWD: ${PWD}"
-        OPENSSL_LIB_PATH="${OPENSSL%apps/openssl}"
-        # echo "OPENSSL_LIB_PATH: ${OPENSSL_LIB_PATH}"
-        if [ "${OPENSSL}" != "${OPENSSL_LIB_PATH}" ]; then
-            # If ${OPENSSL} ends with 'apps/openssl' remove it.
-            # If ${OPENSSL} is the same as 'apps/openssl',
-            #    ${OPENSSL_LIB_PATH}="" and set "./"
-            PATH_TO_ADD="${OPENSSL_LIB_PATH:=./}"
-        else
-            # If OPENSSL=./openssl , it is from ./tmp/openssl-*.*.*/apps/ , so
-            PATH_TO_ADD="../"
-        fi
-        # if [[ "$(uname -s)" == "Darwin"* ]]; then
-        if [ "${UNAME_S}" == "Darwin" ]; then
-            # per process
-            if [ "${DYLD_LIBRARY_PATH}" != "${PATH_TO_ADD}" ] && \
-            [ "${DYLD_LIBRARY_PATH}" == "${DYLD_LIBRARY_PATH//${PATH_TO_ADD}://}" ]; then
-                export DYLD_LIBRARY_PATH="${PATH_TO_ADD}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
-                echo "DYLD_LIBRARY_PATH: ${DYLD_LIBRARY_PATH}"
+        if [[ ${OPENSSL} != *"wrap.pl"* ]]; then
+            OPENSSL_LIB_PATH="${OPENSSL%apps/openssl}"
+            # echo "OPENSSL_LIB_PATH: ${OPENSSL_LIB_PATH}"
+            if [ "${OPENSSL}" != "${OPENSSL_LIB_PATH}" ]; then
+                # If ${OPENSSL} ends with 'apps/openssl' remove it.
+                # If ${OPENSSL} is the same as 'apps/openssl',
+                #    ${OPENSSL_LIB_PATH}="" and set "./"
+                PATH_TO_ADD="${OPENSSL_LIB_PATH:=./}"
+            else
+                # If OPENSSL=./openssl , it is from ./tmp/openssl-*.*.*/apps/ , so
+                PATH_TO_ADD="../"
             fi
-        else
-            # per environment
-            if [ "${LD_LIBRARY_PATH}" != "${PATH_TO_ADD}" ] && \
-            [ "${LD_LIBRARY_PATH}" == "${LD_LIBRARY_PATH//${PATH_TO_ADD}://}" ]; then
-                export LD_LIBRARY_PATH="${PATH_TO_ADD}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-                echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
+            # if [[ "$(uname -s)" == "Darwin"* ]]; then
+            if [ "${UNAME_S}" == "Darwin" ]; then
+                # macOS
+                # Add the path to lib{ssl,crypto}.3.dylib in ./tmp/openssl-*.*.*/ .
+                # per process
+                if [ "${DYLD_LIBRARY_PATH}" != "${PATH_TO_ADD}" ] && \
+                [ "${DYLD_LIBRARY_PATH}" == "${DYLD_LIBRARY_PATH//${PATH_TO_ADD}://}" ]; then
+                    export DYLD_LIBRARY_PATH="${PATH_TO_ADD}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+                    echo "DYLD_LIBRARY_PATH: ${DYLD_LIBRARY_PATH}"
+                fi
+            else
+                # per environment
+                if [ "${LD_LIBRARY_PATH}" != "${PATH_TO_ADD}" ] && \
+                [ "${LD_LIBRARY_PATH}" == "${LD_LIBRARY_PATH//${PATH_TO_ADD}://}" ]; then
+                    export LD_LIBRARY_PATH="${PATH_TO_ADD}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+                    echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
+                fi
             fi
         fi
     fi
@@ -729,11 +856,14 @@ optcheck_measure_plot () {
             exit 2
         fi
         # to avoid suspicious input
-        if [ "${OPENSSL}" != openssl ] && [ "${OPENSSL}" != openssl.exe ] && [ ! -s "${OPENSSL}" ]; then
-            echo
-            echo "Error: '${OPENSSL}' given by -p option does not exist!"
-            echo
-            exit 2
+        # TODO: accept more flex patterns for util/wrap.pl
+        if [ "${OPENSSL: 0: 28}" != "./util/wrap.pl -fips ./apps/" ]; then
+            if [ "${OPENSSL}" != openssl ] && [ "${OPENSSL}" != openssl.exe ] && [ ! -s "${OPENSSL}" ]; then
+                echo
+                echo "Error: '${OPENSSL}' given by -p option does not exist!"
+                echo
+                exit 2
+            fi
         fi
     fi
     add_ld_lib_path
@@ -751,7 +881,7 @@ optcheck_measure_plot () {
         if [[ "${OPENSSL_VER}" == "LibreSSL"* ]]; then
             echo
             echo "Warning: -s option for \"${ARR_SPEED_OPT[*]}\" is ignored on LibreSSL."
-            echo "  Change '${COMMAND}' after LibreSSL supports '-seconds' option."
+            echo "  Change '${COMMAND}' after LibreSSL supports it."
             ARR_SPEED_OPT=()
         fi
     fi
@@ -821,6 +951,12 @@ else
 fi
 
 # Set TABLE_TYPE and NUM_FIELD
+if [ ! -s "${DAT}" ]; then
+    echo
+    echo "Warning: '${DAT}' does not exist. Skipped!"
+    echo
+    exit 0
+fi
 # Check if records exist and they are in the same format.
 # On macOS:
 #   $ wc -l  ./graph.dat

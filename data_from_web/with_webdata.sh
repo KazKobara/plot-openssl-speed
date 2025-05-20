@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2024 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 set -e
 # set -x
 
 ### Params ###
-VER=1.0.1
+VER=1.2.0
 COMMAND=$(basename "$0")
 COMMAND_TMP="${COMMAND%.sh}.tmp"
 rm -f "${COMMAND_TMP}"
@@ -735,7 +735,8 @@ get_webdata_plot_cycles () {
     TAG_SIG_DEC="s:"
     TAG_VER_ENC="v:"
 
-    [ -z "${OQS_SIG_SEL_DAT}" ] && OQS_SIG_SEL_DAT="./oqs_sig_sel.dat"
+    # [ -z "${OQS_SIG_SEL_DAT}" ] && OQS_SIG_SEL_DAT="./oqs_sig_sel.dat"
+    [ -z "${OQS_SIG_SEL_DAT}" ] && OQS_SIG_SEL_DAT="./pqc_sig_sel.dat"
 
     # URL_SIG_PQS="https://pqshield.github.io/nist-sigs-zoo/#performance"
     URL_SIG_PQS="https://pqshield.github.io/nist-sigs-zoo/"
@@ -764,7 +765,8 @@ get_webdata_plot_cycles () {
     unset UNI_OR_DIV  # to default ("both")
 
     ############### kem ###############
-    [ -z "${OQS_KEM_SEL_DAT}" ] && OQS_KEM_SEL_DAT="./oqs_kem_sel.dat"
+    # [ -z "${OQS_KEM_SEL_DAT}" ] && OQS_KEM_SEL_DAT="./oqs_kem_sel.dat"
+    [ -z "${OQS_KEM_SEL_DAT}" ] && OQS_KEM_SEL_DAT="./pqc_kem_sel.dat"
 
     TAG_KEYGEN="k:"
     TAG_SIG_DEC="d:"

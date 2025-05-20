@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2024 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 
 ##
 # @brief        Depict fit graphs.
@@ -18,7 +18,7 @@ else
     fit_array=("$@")
 fi
 
-VER=1.0.0
+VER=1.2.0
 COMMAND=$(basename "$0")
 GRA_TITLE_APPENDIX=""  # TODO: add
 GRA_OPT_COMMON=""
@@ -73,11 +73,11 @@ for proc in "${fit_array[@]}"; do
     echo
     echo "--- ${IN_FILE} ---> ${FIT_FILE} ---"
     if [ ! -s "${IN_FILE}" ]; then
-        echo "Warning: no ${IN_FILE} or it is empty, skipped!"
+        echo "Notice: no ${IN_FILE} or it is empty. Skipped!"
         continue
     fi
     if [ -z "$(awk '(! /^[ \t]*#/) && (NF > 1) {print NF}' "${IN_FILE}")" ]; then
-        echo "Warning: '${IN_FILE}' has no data. Skipped!"
+        echo "Notice: '${IN_FILE}' has no data. Skipped!"
         continue
     fi
     awk "(! /^[ \t]*#/) {print substr(\$1,${SUBSTR_START}${SUBSTR_LEN}), ${POS} }" "${IN_FILE}" > "${FIT_FILE}"

@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Common utilities for plot_openssl*.sh .
+#
+# This file is part of https://github.com/KazKobara/plot_openssl_speed
+# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+
 set -e
 # set -x
 
 ### Params ###
 # shellcheck disable=SC2034  # used in plot_openssl*.sh
-VER=1.1.0
+VER=1.2.0
 GRA_DIR="graphs"
 UNAME_S="$(uname -s)"
 
@@ -27,7 +31,7 @@ fi
 # @param[out]   exit 2 if given path is not allowed
 check_path (){
     local real_path touched
-    # TODO: test realpath and then determin if it requires the given path and file.
+    # TODO: test realpath and then determine if it requires the given path and file.
     # NOTE: some `realpath` command fails with "No such file or directory" for non-existant 
     if [ ! -e "$2" ] && [ "${UNAME_S}" == "Darwin" ] ; then
         touch "$2"
@@ -119,4 +123,41 @@ liboqs_ver_from_command () {
     fi
     # "OpenSSL3.3.1" or "OpenSSL3.3.1 liboqs0.10.0"
     #OPENSSL_INFO="${openssl_ver_nospace} ${liboqs_ver_nospace}"
+}
+
+
+##
+# @brief        Set OPENSSL_VER_NOSPACE using ${OPENSSL} command.
+# @param[in]    global OPENSSL : openssl command
+# @param[in]    global OPENSSL_VER : string
+# @param[out]   global OPENSSL_VER_NOSPACE : string for graph title
+openssl_ver_nospace_from_command () {
+    local tmp
+    # get OpenSSL FIPS Provider version "OpenSSL3.1.2" from:
+:<<'# COMMENT_EOF'
+        Providers:
+        base
+            name: OpenSSL Base Provider
+            version: 3.5.0
+            status: active
+        fips
+            name: OpenSSL FIPS Provider
+            version: 3.1.2
+            status: active
+# COMMENT_EOF
+    # NOTE:
+    #   For MinGW, $1=="fips" does not work due to the carriage return code after it.
+    # tmp=$(${OPENSSL} list -providers | awk '$1=="fips" {getline; printf "%s",$2; getline; print $2}')
+    tmp=$(${OPENSSL} list -providers 2>/dev/null | awk '$1 ~ "fips" {getline; printf "%s",$2; getline; print $2}' | tr -d '\r\n')
+    if [ -n "${tmp}" ]; then
+        # fips provider
+        OPENSSL_VER_NOSPACE="${tmp}FIPS"
+    else
+        # no fips provider
+        if [ -z "${OPENSSL_VER}" ]; then
+            OPENSSL_VER=$(${OPENSSL} version)
+        fi
+        OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+    fi
+    export OPENSSL_VER_NOSPACE
 }

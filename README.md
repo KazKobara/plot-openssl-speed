@@ -2,7 +2,9 @@
 
 [日本語 <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/jp.svg" width="20" alt="Japanese" title="Japanese"/>](./README-jp.md)
 
-* v1.0.0 supports post-quantum cryptographies.
+* v1.2 and newer support FIPS providers.
+  * A list of FIPS-validated versions and their information are [here](https://openssl-library.org/source/).
+* v1 and newer support post-quantum cryptographies.
 
 ## Preparation
 
@@ -10,14 +12,15 @@
     * On Debian/Ubuntu:
 
         ```bash
-        sudo apt install gnuplot git openssl make gcc gcc-mingw-w64-x86-64 cmake ninja autoconf
+        sudo apt install gnuplot git openssl make gcc gcc-mingw-w64-x86-64 cmake ninja autoconf perl
         ```
 
         > * `openssl` is for using the openssl command in the PATH.
         > * `make gcc` are for making `openssl` commands from the source code.
-        > * `gcc-mingw-w64-x86-64` is for making openssl.exe with MinGW.
+        > * `gcc-mingw-w64-x86-64` is for making openssl.exe with Mingw-w64.
         > * `cmake ninja` are for building `oqsprovider` and `liboqs`.
         > * `autoconf` is for making `configure` from `configure.ac` for `LibreSSL` git repo.
+        > * `perl` is for executing a FIPS provider (except for Mingw-w64).
 
     * On macOS
       1. Command Line Tools by entering on a terminal a command it provides, such as
@@ -29,23 +32,19 @@
       1. Install [Homebrew](https://brew.sh/), then
 
           ```zsh
-          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf
+          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf automake perl
           ```
 
           > * `coreutils` is needed to use `realpath` command.
-          > * `mingw-w64` is for building `openssl.exe` with `MinGW`.
+          > * `mingw-w64` is for building `openssl.exe` with `Mingw-w64`.
           > * `cmake` and `ninja` are for building `oqsprovider`, `liboqs` and so on.
           > * `autoconf` is for making `configure` from `configure.ac` for `LibreSSL` git repo.
-
-      1. If Zsh causes a problem, try changing to Bash
-
-          ```zsh
-          chsh -s /bin/bash
-          ```
+          > * `automake` is for building `LibreSSL`<!-- (at least v4.1.0)-->.
+          > * `perl` is for executing a FIPS provider (except for Mingw-w64).
 
     * For post-quantum cryptographies:
 
-      1. Install Python 3 and some of its external libraries and packages, such as `pyyaml` and `tabulate`.
+        1. Install Python 3 and some of its external libraries and packages, such as `pyyaml` and `tabulate`.
 
 1. Download scripts:
 
@@ -84,7 +83,7 @@
 
 > * The option '`-s 1`' is to set the measuring time to 1 second to speed up and grab the rough trend. Remove it for accurate measurements.
 > * The following graphs are obtained without '`-s 1`'.
-> * The script ignores '`-s 1`' against LibreSSL since its `openssl speed` does not support `-seconds` option and causes an error at least at 2.8.3.
+> * The script ignores '`-s 1`' against LibreSSL since its `openssl speed` does not support `-seconds` option and causes an error at least up to 4.10.0.
 
 The measurement results (graph files `*.png` and their data files `*.dat`) are stored in the directories displayed at the end of the output message as follows:
 
@@ -107,7 +106,7 @@ Example of graph list (LibreSSL 2.8.3 in PATH):
 
 ## Plot speed of openssl's obtained from source code
 
-The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.7`, and openssl.exe command cross-compiled by MinGW (x86_64-w64-mingw32-gcc):
+The following command graphs the speed of openssl command compiled from the source code [tag](https://github.com/openssl/openssl)ed as `openssl-3.0.7`, and openssl.exe command cross-compiled by Mingw-w64 (x86_64-w64-mingw32-gcc):
 
 ```bash
 ./plot_openssl_speed_all.sh -s 1 openssl-3.0.7 openssl-3.0.7-mingw
@@ -790,6 +789,24 @@ Some versions of openssl commands do not support them.
 ### ./apps/openssl.exe: Invalid argument
 
 Check if your security software displays a message that blocks the execution. If so, unblock it and run the same script again.
+
+<!--
+### Shell script execution problem on macOS
+
+Try any of the following:
+
+* Run on Zsh:
+
+  ```zsh
+  zsh <shellscript_file_name>.sh
+  ```
+
+* Chang the shell to Bash:
+
+  ```zsh
+  chsh -s /bin/bash
+  ```
+-->
 
 ## Link
 

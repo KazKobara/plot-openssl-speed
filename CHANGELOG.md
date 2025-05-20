@@ -4,7 +4,27 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.1.1] -->
+<!-- ## [Unreleased 1.2.1] -->
+
+## [1.2.0]
+
+### Added
+
+- `fips-*` openssl_type, which uses fips-provider, by changing:
+  - `${OPENSSL}` to `./util/wrap.pl -fips ${OPENSSL}` (except for Mingw-w64)
+  - `${PLOT_SCRIPT}` to `${ARR_PLOT_SCRIPT[@]}`
+  - `${SPEED_OPT}` to `${ARR_SPEED_OPT[@]}`
+  - The data source for RSA from `rsa.log` to `rsa.dat` and `rsa_enc.dat` (to deal with `RSA encrypt setup failure.  No RSA encrypt will be done.`).
+
+### Changed
+
+- `dh_all.dat` from `ecdh.dat` and `ffdh.dat`.
+- `dsa_all.dat` from `ecdsa.dat`, `eddsa.dat`and `dsa.dat`.
+
+### Fixed
+
+- Misbehavior after `*-oqsprovider*` `openssl_type` by unsetting
+  its variables.
 
 ## [1.1.0]
 
