@@ -4,7 +4,17 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.2.1] -->
+<!-- ## [Unreleased 1.2.2] -->
+
+## [1.2.1]
+
+### Added
+
+- [A patch](./utils/speed_pqcsigs_in_default_provider.patch) to fix [this error](https://github.com/openssl/openssl/issues/27108).
+
+### Changed
+
+- GIT_CLONE="${GIT} clone"
 
 ## [1.2.0]
 

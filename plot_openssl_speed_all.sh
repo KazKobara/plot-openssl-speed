@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
 # Wrapper of ${PLOT_SCRIPT}
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2024 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 set -e
 # set -x
 
+### Patch management ###
+# For OpenSSL 3.5.0 and newer,
+# whether "Error while initializing signing data structs" is fixed or not
+# cf. https://github.com/openssl/openssl/issues/27108
+SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED="False"  # turn this "True" after fixed
+if [ "${SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED}" == "True" ]; then
+    # if fixed, no patch
+    PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER="False"
+else
+    # if not fixed, fix it by applying patch 
+    PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER="True"
+    SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED="True"
+fi
+
 ### Params ###
-# VER=0.1.0
 COMMAND=$(basename "$0")
 # GRA_DIR="graphs"
 # PLOT_SCRIPT's PATH is from ${TMP_DIR}/${openssl_type}/
@@ -15,8 +28,9 @@ PLOT_SCRIPT="../../plot_openssl_speed.sh"
 PLOT_FIT_SCRIPT="../../../utils/plot_fit.sh"
 PLOT_WITH_WEB_DATA="../../../data_from_web/with_webdata.sh"
 
-GIT_CLONE="git clone"
-# GIT_CLONE="gh repo clone"
+GIT="git"
+# GIT="gh repo"
+GIT_CLONE="${GIT} clone"
 # NOTE:
 #   TAG_MINGW and TAG_FIPS can be case-insensitive in bash 4.4.20 and newer
 #   by using "${VAR,,}". Search ",,}" in this script and edit there.
@@ -122,18 +136,15 @@ plot_graph_asymmetric () {
         # ${PLOT_SCRIPT} -o "./${GRA_DIR}/pqc_kem_def.png" ML-KEM-{512,768,1024}
         "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/pqc_kem_def.png" ML-KEM-{512,768,1024}
     fi
-:<<'# COMMENT_EOF'
-    # TODO:
-    #   Uncomment after "Error while initializing signing data structs"
-    #   in https://github.com/openssl/openssl/issues/27108 is fixed
-    if [ -s "./${GRA_DIR}/pqc_sig_def.png" ]; then
-        echo
-        echo "Notice: './${GRA_DIR}/pqc_sig_def.png' already exists."
-        echo "  Move or remove it to renew it."
-    else
-        "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/pqc_sig_def.png" ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}
+    if [ "${SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED}" == "True" ]; then
+        if [ -s "./${GRA_DIR}/pqc_sig_def.png" ]; then
+            echo
+            echo "Notice: './${GRA_DIR}/pqc_sig_def.png' already exists."
+            echo "  Move or remove it to renew it."
+        else
+            "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/pqc_sig_def.png" ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}
+        fi
     fi
-# COMMENT_EOF
 
     ## Post-Quantum (Open Quantum Safe)
     # NOTE: even if [ -n "${LIBOQS_VER}" ] is true,
@@ -364,11 +375,13 @@ plot_graph_asymmetric () {
         awk '$1 ~ /^(ecdsa\(nistp521)/' \
             "./${GRA_DIR}/dsa_all.dat" >> "./${GRA_DIR}/sig_256bs.dat"
     fi
-    if [ -s "./${GRA_DIR}/oqs_sig_all.dat" ]; then
-        awk '$1 ~ /(mldsa44|mayo[12])/' "./${GRA_DIR}/oqs_sig_all.dat" >> "./${GRA_DIR}/sig_128bs.dat"
-        awk '$1 ~ /(mldsa65|mayo3)/' "./${GRA_DIR}/oqs_sig_all.dat" >> "./${GRA_DIR}/sig_192bs.dat"
-        awk '$1 ~ /(mldsa87|mayo5)/' "./${GRA_DIR}/oqs_sig_all.dat" >> "./${GRA_DIR}/sig_256bs.dat"
-        # NOTE: precisely if the above algorithms are added
+    if [ -s "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" ]; then
+        awk '$1 ~ /(ML-DSA-44|mldsa44|mayo[12])/' "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" >> "./${GRA_DIR}/sig_128bs.dat"
+        awk '$1 ~ /(ML-DSA-65|mldsa65|mayo3)/' "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" >> "./${GRA_DIR}/sig_192bs.dat"
+        awk '$1 ~ /(ML-DSA-87|mldsa87|mayo5)/' "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" >> "./${GRA_DIR}/sig_256bs.dat"
+    fi
+    if [ -n "${LIBOQS_VER}" ]; then
+        # NOTE: precisely if the algorithms are added from oqs_sig_all.dat
         GRA_TITLE_APPENDIX_FINAL="${GRA_TITLE_APPENDIX} liboqs${LIBOQS_VER}"
     else
         GRA_TITLE_APPENDIX_FINAL="${GRA_TITLE_APPENDIX}"
@@ -803,6 +816,12 @@ set_openssl_tagged () {
                 git_url="https://github.com/openssl/openssl.git"
                 # ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
                 ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type_dir}"
+                if [ "${PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER}" == "True" ]; then
+                    (
+                        cd "${openssl_type_dir}" && \
+                        ${GIT} apply ../../utils/speed_pqcsigs_in_default_provider.patch
+                    )
+                fi
                 ;;
             libressl|LibreSSL|LIBRESSL)
                 tag="${tag_candidate}"

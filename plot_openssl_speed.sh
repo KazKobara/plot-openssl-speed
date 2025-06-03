@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2024 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 set -e
 # set -x
 
@@ -142,7 +142,8 @@ extract_rsa_sig (){
     # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
     if [ "${rsa_num_field_sig}" == "6" ]; then
         # sig w keygen
-        awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5,"0"}}' "$1" >> "$2"
+        # awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5,"0"}}' "$1" >> "$2"
+        awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5}}' "$1" >> "$2"
     elif [ "${rsa_num_field}" == "11" ]; then
         # sig w/o keygen
         awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n",$1$2,$8,$9,"0"}' "$1" >> "$2"
@@ -257,7 +258,9 @@ measure () {
         # override CUR_TABLE_TYPE="kbytes"
         if [ "${algo: 0:5}" == "ecdsa" ] || [ "${algo: 0:2}" == "ed" ] || \
              [ "${ALGO3}" == "dsa" ] || \
-             [[ "${ARR_OQS_SIG[*]}" == *"${algo}"* ]]; then
+             [[ "${ARR_OQS_SIG[*]}" == *"${algo}"* ]] || \
+             [ "${algo: 0:6}" == "ML-DSA" ] || \
+             [ "${algo: 0:7}" == "SLH-DSA" ]; then
             # CUR_TABLE_TYPE="sig_ver"
             CUR_TABLE_TYPE="sig_ver_keygen"
             if [ "${CUR_TABLE_TYPE}" != "${PRE_TABLE_TYPE}" ]; then
@@ -278,8 +281,11 @@ measure () {
                 #
                 # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
                 awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n", $1$2,$6,$7,"0"}' "${LOG}" >> "${DAT}"
-            elif [[ "${ARR_OQS_SIG[*]}" == *"${algo}"* ]]; then
-                INC_OQS_ALGO="yes"
+            elif [[ "${ARR_OQS_SIG[*]}" == *"${algo}"* ]] || \
+                    [ "${algo: 0:6}" == "ML-DSA" ] || \
+                    [ "${algo: 0:7}" == "SLH-DSA" ]; then
+                # if from liboqs
+                [[ "${ARR_OQS_SIG[*]}" == *"${algo}"* ]] && INC_OQS_ALGO="yes"
                 #             keygen     signs    verify keygens/s    sign/s  verify/s
                 #  mldsa87 0.000096s 0.000177s 0.000082s   10448.0    5646.0   12261.0
                 awk -v REGEXP="^${algo}" '$1 ~ REGEXP {printf "%-25s %10s %10s %10s\n", $1,$6,$7,$5}' "${LOG}" >> "${DAT}"
@@ -398,12 +404,12 @@ measure () {
                 # CUR_TABLE_TYPE="dh"
                 # awk '$1$2$3 ~ /^[1-9][0-9]+bits?ffdh/ {$1=$3$1;$2="";$3=""; print}' "${LOG}" >> "${DAT}"
                 awk '$1$2$3 ~ /^[1-9][0-9]+bits?ffdh/ {printf "%-25s %10s %10s %10s %10s\n", $3$1,"0","0","0",$5}' "${LOG}" >> "${DAT}"
-            elif [[ "${ARR_OQS_KEM[*]}" == *"${algo}"* ]]; then
-                INC_OQS_ALGO="yes"
+            elif [[ "${ARR_OQS_KEM[*]}" == *"${algo}"* ]] || \
+                    [ "${algo: 0:6}" == "ML-KEM" ]; then
+                # if from liboqs
+                [[ "${ARR_OQS_KEM[*]}" == *"${algo}"* ]] && INC_OQS_ALGO="yes"
                 #               keygen    encaps    decaps keygens/s  encaps/s  decaps/s
                 #   mlkem512 0.000015s 0.000010s 0.000009s   65849.0  100755.0  105835.9
-                awk -v ALGO="${algo}" '$1 == ALGO {printf "%-25s %10s %10s %10s %10s\n", $1,$7,$6,$5,"0"}' "${LOG}" >> "${DAT}"
-            elif [ "${algo: 0:6}" == "ML-KEM" ]; then
                 awk -v ALGO="${algo}" '$1 == ALGO {printf "%-25s %10s %10s %10s %10s\n", $1,$7,$6,$5,"0"}' "${LOG}" >> "${DAT}"
             fi
         else
