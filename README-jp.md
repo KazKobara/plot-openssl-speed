@@ -845,6 +845,16 @@ gnuplot 5.4 patchlevel 3
 
 ## トラブルシューティング
 
+### `TimeoutError: Navigation timeout of`と表示される
+
+[./data_from_web/with_webdata.sh](./data_from_web/with_webdata.sh) 内で指定しているデータ取得元 URL からの反応が無いか遅延が生じているようです。
+
+しばらくしてから、同じスクリプトを再実行するか、データが不要でしたら[plot_openssl_speed_all.sh](plot_openssl_speed_all.sh)内の以下の行をコメントアウトしてから再実行下さい。
+
+```shell script
+(cd "${GRA_DIR}" && ${PLOT_WITH_WEB_DATA})
+```
+
 ### `ModuleNotFoundError: No module named`と表示される
 
 不足している Python モジュールをインストールして下さい。

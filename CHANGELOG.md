@@ -11,6 +11,7 @@ All notable changes, such as backward incompatibilities, will be documented in t
 ### Added
 
 - [A patch](./utils/speed_pqcsigs_in_default_provider.patch) to fix [this error](https://github.com/openssl/openssl/issues/27108).
+- How to troubleshoot `TimeoutError: Navigation timeout of` in README.
 
 ### Changed
 

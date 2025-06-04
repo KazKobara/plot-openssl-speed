@@ -748,6 +748,16 @@ gnuplot 5.4 patchlevel 3
 
 ## Troubleshooting
 
+### TimeoutError: Navigation timeout of
+
+Reply from the servers where [./data_from_web/with_webdata.sh](./data_from_web/with_webdata.sh) retrieves data either delayed or did not respond.
+
+Retry the same script after a while or after commenting out the following line in [plot_openssl_speed_all.sh](plot_openssl_speed_all.sh) if the necessity of the data is low:
+
+```shell script
+(cd "${GRA_DIR}" && ${PLOT_WITH_WEB_DATA})
+```
+
 ### ModuleNotFoundError: No module named
 
 Import the missing Python modules.

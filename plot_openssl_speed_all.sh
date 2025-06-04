@@ -708,9 +708,13 @@ set_with_oqsprovider () {
         if [ -s "${OPENSSL_APP}" ] && [ -s "${OPENSSL_CONF}" ] && [ -d "${OPENSSL_MODULES}" ]; then
             echo "Notice: skip 'fullbuild.sh'."
         else
+            if [ "${PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER}" == "True" ]; then
+                # apply patch
+                sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider.patch \&\& LDFLAGS/" scripts/fullbuild.sh
+            fi
             # can comment out the next sed command if git protocol is allowed in your network
-            sed -i".org" 's/git:\/\/git.openssl.org/https:\/\/github.com\/openssl/' scripts/fullbuild.sh && \
-            export OPENSSL_BRANCH && export LIBOQS_BRANCH
+            sed -i".org" 's/git:\/\/git.openssl.org/https:\/\/github.com\/openssl/' scripts/fullbuild.sh
+            export OPENSSL_BRANCH LIBOQS_BRANCH
             set +e
             # TODO:
             #   - Make fullbuild.sh "set -e" compatible.
