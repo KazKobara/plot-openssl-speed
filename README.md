@@ -755,7 +755,7 @@ Reply from the servers where [./data_from_web/with_webdata.sh](./data_from_web/w
 Retry the same script after a while or after commenting out the following line in [plot_openssl_speed_all.sh](plot_openssl_speed_all.sh) if the necessity of the data is low:
 
 ```shell script
-(cd "${GRA_DIR}" && ${PLOT_WITH_WEB_DATA})
+(cd "${GRA_DIR}" && { ${PLOT_WITH_WEB_DATA} || true;})
 ```
 
 ### ModuleNotFoundError: No module named

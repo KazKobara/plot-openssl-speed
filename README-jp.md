@@ -852,7 +852,7 @@ gnuplot 5.4 patchlevel 3
 しばらくしてから、同じスクリプトを再実行するか、データが不要でしたら[plot_openssl_speed_all.sh](plot_openssl_speed_all.sh)内の以下の行をコメントアウトしてから再実行下さい。
 
 ```shell script
-(cd "${GRA_DIR}" && ${PLOT_WITH_WEB_DATA})
+(cd "${GRA_DIR}" && { ${PLOT_WITH_WEB_DATA} || true;})
 ```
 
 ### `ModuleNotFoundError: No module named`と表示される

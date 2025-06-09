@@ -103,6 +103,7 @@ extract_rsa_enc (){
     local rsa_num_field="$3"
     local rsa_num_field_enc="$4"
     local rsa_num_field_sig="$5"
+    # echo "rsa_num_field=$3, rsa_num_field_enc=$4, rsa_num_field_sig=$5"
     TO_NOTICE="no"  # or "yes"
     # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
     if [ "${rsa_num_field_enc}" == "6" ]; then
@@ -138,12 +139,12 @@ extract_rsa_sig (){
     local rsa_num_field="$3"
     local rsa_num_field_enc="$4"
     local rsa_num_field_sig="$5"
+    # echo "rsa_num_field=$3, rsa_num_field_enc=$4, rsa_num_field_sig=$5"
     TO_NOTICE="no"  # or "yes"
     # "0" padding is needed to identify TABLE_TYPE in data-plot mode.
     if [ "${rsa_num_field_sig}" == "6" ]; then
         # sig w keygen
-        # awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5,"0"}}' "$1" >> "$2"
-        awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s %10s\n",$1,$6,$7,$5}}' "$1" >> "$2"
+        awk '(($1=="keygen")&&($2=="signs")&&($3=="verify")),/^s+$/ {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s\n",$1,$6,$7,$5}}' "$1" >> "$2"
     elif [ "${rsa_num_field}" == "11" ]; then
         # sig w/o keygen
         awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n",$1$2,$8,$9,"0"}' "$1" >> "$2"
@@ -152,8 +153,7 @@ extract_rsa_sig (){
         awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP {printf "%-25s %10s %10s %10s\n",$1$2,$6,$7,"0"}' "$1" >> "$2"
     elif [ "${rsa_num_field_enc}" == "6" ]; then
         # enc w keygen
-        awk '(($1=="keygen")&&($2=="encaps")&&($3=="decaps")),(($1=="keygen")&&($2=="signs")&&($3=="verify")) {if ($1 ~ "rsa") {printf "%-25s %1
-0s %10s %10s\n",$1,$7,$6,$5}}' "$1" >> "$2"
+        awk '(($1=="keygen")&&($2=="encaps")&&($3=="decaps")),(($1=="keygen")&&($2=="signs")&&($3=="verify")) {if ($1 ~ "rsa") {printf "%-25s %10s %10s %10s\n",$1,$7,$6,$5}}' "$1" >> "$2"
         TO_NOTICE="yes"
     fi
 }

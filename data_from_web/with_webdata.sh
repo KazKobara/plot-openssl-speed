@@ -6,7 +6,7 @@ set -e
 # set -x
 
 ### Params ###
-VER=1.2.0
+VER=1.2.1
 COMMAND=$(basename "$0")
 COMMAND_TMP="${COMMAND%.sh}.tmp"
 rm -f "${COMMAND_TMP}"

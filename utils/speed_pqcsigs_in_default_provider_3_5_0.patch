@@ -1,8 +1,8 @@
 diff --git a/crypto/evp/signature.c b/crypto/evp/signature.c
-index d01df32..baf0ac3 100644
+index e5bb7da..bdb6fe0 100644
 --- a/crypto/evp/signature.c
 +++ b/crypto/evp/signature.c
-@@ -795,13 +795,17 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *signature,
+@@ -718,12 +718,16 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *signature,
  
      switch (operation) {
      case EVP_PKEY_OP_SIGN:
@@ -13,8 +13,7 @@ index d01df32..baf0ac3 100644
 +            /* for openssl speed ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f} */
 +            ret = signature->sign_message_init(ctx->op.sig.algctx, provkey, params);
 +        } else {
-             ERR_raise_data(ERR_LIB_EVP, EVP_R_PROVIDER_SIGNATURE_NOT_SUPPORTED,
-                            "%s sign_init:%s", signature->type_name, desc);
+             ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
              ret = -2;
              goto err;
          }
@@ -22,7 +21,7 @@ index d01df32..baf0ac3 100644
          break;
      case EVP_PKEY_OP_SIGNMSG:
          if (signature->sign_message_init == NULL) {
-@@ -813,13 +817,17 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *signature,
+@@ -734,12 +738,16 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *signature,
          ret = signature->sign_message_init(ctx->op.sig.algctx, provkey, params);
          break;
      case EVP_PKEY_OP_VERIFY:
@@ -33,8 +32,7 @@ index d01df32..baf0ac3 100644
 +            /* for openssl speed ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f} */
 +            ret = signature->verify_message_init(ctx->op.sig.algctx, provkey, params);
 +        } else {
-             ERR_raise_data(ERR_LIB_EVP, EVP_R_PROVIDER_SIGNATURE_NOT_SUPPORTED,
-                            "%s verify_init:%s", signature->type_name, desc);
+             ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
              ret = -2;
              goto err;
          }

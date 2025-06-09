@@ -37,6 +37,8 @@ GIT_CLONE="${GIT} clone"
 TAG_MINGW="-mingw"
 TAG_FIPS="fips-"
 
+DEFAULT_RUN_MODE=full
+
 TMP_DIR="./tmp"
 mkdir -p "${TMP_DIR}"
 ALLOWED_DIR=$(realpath ${TMP_DIR})
@@ -56,7 +58,7 @@ usage () {
     echo "     - 'openssl_type' is a form of"
     echo "       '[${TAG_FIPS}]openssl_tag[(-oqsprovider_type|${TAG_MINGW})]'"
     echo "       such as "
-    echo "       'openssl-3.4.1-oqsprovider0.8.0-liboqs0.13.0-rc1'"
+    echo "       'openssl-3.4.1-oqsprovider0.9.0-liboqs0.13.0'"
     echo "       'openssl-3.5.0${TAG_MINGW}'"
     echo "       '${TAG_FIPS}-openssl-3.1.2'"
     echo "       'master-oqsprovidermain-liboqsmain' ."
@@ -95,6 +97,9 @@ usage () {
     echo "     [-s seconds] Seconds [1-99] to measure the speed."
     echo "                  Set '1' to speed up for debug."
     echo "                  LibreSSL at least 2.8.3 does not support this."
+    echo "     [-r run_mode] 'run_mode' is one of 'build_only', 'full',"
+    echo "                  'skip_symmetric', or 'skip_asymmetric'"
+    echo "                  (default: '${DEFAULT_RUN_MODE}')"
     echo "     [-(h|?)]     Show this usage"
     echo
 }
@@ -182,7 +187,14 @@ plot_graph_asymmetric () {
             "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/oqs_kem_all.png" "${ARR_OQS_KEM[@]}"
         fi
         # plot with web data
-        (cd "${GRA_DIR}" && ${PLOT_WITH_WEB_DATA})
+        # NOTE:
+        #   "TimeoutError: Navigation timeout" happens when some servers
+        #   where ./data_from_web/with_webdata.sh retrieves data
+        #   do not respond.
+        #   Retry the same script after a while
+        #   or after commenting out the following line
+        #   if the necessity of the data is low:
+        (cd "${GRA_DIR}" && { ${PLOT_WITH_WEB_DATA} || true;})  # void exit by set -e
     fi
 
     # PQC selections
@@ -631,8 +643,16 @@ plot_graphs () {
     ##### Edit crypt-algorithms (and output graph file name) below #####
     ### TIPS: Place a short crypt-algorithm name at the rightest to avoid
     ###       space in the output graph.
-    plot_graph_asymmetric
-    plot_graph_symmetric
+    if [ "${RUN_MODE}" == "build_only" ]; then
+        exit 0
+    fi
+    if [ "${RUN_MODE}" != "skip_asymmetric" ]; then
+        plot_graph_asymmetric
+    fi
+    if [ "${RUN_MODE}" != "skip_symmetric" ]; then
+        plot_graph_symmetric
+    fi
+    # [ "${RUN_MODE}" == "full" ]
 }
 
 
@@ -709,8 +729,14 @@ set_with_oqsprovider () {
             echo "Notice: skip 'fullbuild.sh'."
         else
             if [ "${PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER}" == "True" ]; then
-                # apply patch
-                sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider.patch \&\& LDFLAGS/" scripts/fullbuild.sh
+                if [ "${OPENSSL_BRANCH}" == "openssl-3.5.0" ]; then
+                    V_FOR_PATCH="_3_5_0"
+                else
+                    V_FOR_PATCH=""
+                fi
+                # apply patch but avoid exit by set -e
+                # sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider.patch \; LDFLAGS/" scripts/fullbuild.sh
+                  sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& { ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider${V_FOR_PATCH}.patch \|\| true \;} \&\& LDFLAGS/" scripts/fullbuild.sh
             fi
             # can comment out the next sed command if git protocol is allowed in your network
             sed -i".org" 's/git:\/\/git.openssl.org/https:\/\/github.com\/openssl/' scripts/fullbuild.sh
@@ -821,9 +847,14 @@ set_openssl_tagged () {
                 # ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
                 ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type_dir}"
                 if [ "${PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER}" == "True" ]; then
+                    if [ "${tag}" == "openssl-3.5.0" ]; then
+                        V_FOR_PATCH="_3_5_0"
+                    else
+                        V_FOR_PATCH=""
+                    fi
                     (
                         cd "${openssl_type_dir}" && \
-                        ${GIT} apply ../../utils/speed_pqcsigs_in_default_provider.patch
+                        { ${GIT} apply ../../utils/speed_pqcsigs_in_default_provider"${V_FOR_PATCH}".patch || true;}  # avoid exit by set -e
                     )
                 fi
                 ;;
@@ -978,10 +1009,12 @@ set_openssl_tagged () {
 ### opt check ###
 # SPEED_OPT=""  # default: 3s for symmetric, 10s for asymmetric
 ARR_SPEED_OPT=()  # default: 3s for symmetric, 10s for asymmetric
-while getopts 's:h?' OPTION
+RUN_MODE="${DEFAULT_RUN_MODE}"  # default
+while getopts 's:r:h?' OPTION
 do
     case $OPTION in
         s) s_arg=${OPTARG};;  # openssl speed -seconds
+        r) RUN_MODE=${OPTARG};;
         h|?|*) usage; exit 2;;
     esac
 done
@@ -993,9 +1026,24 @@ if [ -n "${s_arg}" ]; then
         # SPEED_OPT="-s ${s_arg}"
         ARR_SPEED_OPT=(-s "${s_arg}")
     else
-        "Error: invalid '${s_arg}' for -s option!"
+        echo
+        echo "Error: invalid '${s_arg}' for the '-s' option!"
+        echo
         usage; exit 2
     fi
+fi
+
+# arg check for -r option
+if [ "${RUN_MODE}" != "build_only" ] && \
+        [ "${RUN_MODE}" != "full" ] && \
+        [ "${RUN_MODE}" != "skip_symmetric" ] && \
+        [ "${RUN_MODE}" != "skip_asymmetric" ]; then
+    echo
+    echo "Error: unknown run_mode '${RUN_MODE}' for the '-r' option!"
+    echo "  'run_mode' is one of 'build_only', 'full',"
+    echo "  'skip_symmetric', or 'skip_asymmetric'."
+    echo
+    exit 2
 fi
 
 # set openssl command(s) and then plot graphs obtained by the command(s)
