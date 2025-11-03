@@ -1,9 +1,10 @@
-# How to plot `openssl speed` results (easily)
+# How to easily plot `openssl speed` results and more
 
 [日本語 <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/jp.svg" width="20" alt="Japanese" title="Japanese"/>](./README-jp.md)
 
+* v1.3 added [pairing_bench.sh](./pairing_bench.sh) to measure and depict the processing speed of the bilinear map, or pairing ([README](./README-pairing-bench.md)).
 * v1.2 and newer support FIPS providers.
-  * A list of FIPS-validated versions and their information are [here](https://openssl-library.org/source/).
+  * A list of FIPS-validated versions and their corresponding information can be found [in the middle of this link](https://openssl-library.org/source/).
 * v1 and newer support post-quantum cryptographies.
 
 ## Preparation
@@ -16,9 +17,9 @@
         ```
 
         > * `openssl` is for using the openssl command in the PATH.
-        > * `make gcc` are for making `openssl` commands from the source code.
+        > * `make` and `gcc` are for making `openssl` commands from the source code.
         > * `gcc-mingw-w64-x86-64` is for making openssl.exe with Mingw-w64.
-        > * `cmake ninja` are for building `oqsprovider` and `liboqs`.
+        > * `cmake` and `ninja` are for building `oqsprovider` and `liboqs`.
         > * `autoconf` is for making `configure` from `configure.ac` for `LibreSSL` git repo.
         > * `perl` is for executing a FIPS provider (except for Mingw-w64).
 
@@ -684,9 +685,9 @@ Linux 5.10.102.1-microsoft-standard-WSL2 x86_64
 ```
 
 ```console
-$ awk '$1$2 == "modelname" {$1="";$2="";$3=""; print substr($0,4); exit;}' /proc/cpuinfo
+$ awk '{if($1$2 == "modelname"){$1="";$2="";$3=""; model=substr($0,4)}; if($1$2 == "cpuMHz") {max=$4/1000; printf "%s (%.2fGHz)\n",model,max; exit;}}' /proc/cpuinfo
 
-Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz
+Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz (1.61GHz)
 ```
 
 Version and configurations of the openssl command in the PATH:

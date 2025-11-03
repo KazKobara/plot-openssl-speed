@@ -9,7 +9,7 @@ set -e
 
 ### Params ###
 # shellcheck disable=SC2034  # used in plot_openssl*.sh
-VER=1.2.1
+VER=1.3
 GRA_DIR="graphs"
 UNAME_S="$(uname -s)"
 

@@ -1,12 +1,13 @@
-# plot-openssl-speed: 複数の `openssl speed` 測定結果を簡単にグラフ描画する方法
+# plot-openssl-speed: 複数の `openssl speed` 計測結果などを簡単にグラフ描画する方法
 
 [English <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/gb.svg" width="20" alt="English" title="English"/>](./README.md)
 
-* v1.2 以降でFIPSプロバイダーの測定結果のグラフ描画を可能にしました。
+* v1.3 で双線形写像(ペアリング)の処理速度を計測し、結果をグラフ描画するスクリプト [pairing_bench.sh](./pairing_bench.sh) を追加しました([使い方](./README-pairing-bench-jp.md))。
+* v1.2 以降でFIPSプロバイダーの計測結果のグラフ描画を可能にしました。
   * FIPS validated バージョンなどの情報は[こちら](https://openssl-library.org/source/)。
-* v1 以降で耐量子計算機暗号の測定結果のグラフ描画を可能にしました。
+* v1 以降で耐量子計算機暗号の計測結果のグラフ描画を可能にしました。
 
-本プログラム/スクリプトは、OpenSSL及びその互換プログラム/ライブラリ(LibreSSLなど)の使用者/開発者が、そこで利用可能な暗号アルゴリズムの処理速度を手元の環境で測定し結果を比較表示したり、Web上で公開されている処理速度やサイズ情報などと比較する作業を容易にするためのものです。
+本プログラム/スクリプトは、OpenSSL及びその互換プログラム/ライブラリ(LibreSSLなど)の使用者/開発者が、そこで利用可能な暗号アルゴリズムの処理速度を手元の環境で計測し結果を比較表示したり、Web上で公開されている処理速度やサイズ情報などと比較する作業を容易にするためのものです。
 暗号アルゴリズムを128/192/256ビットセキュリティへ移行する際や耐量子計算機暗号へ移行する際の判断材料を得ることができます。
 
 ## 前準備
@@ -19,7 +20,7 @@
         ```
 
         > * `openssl` は実行PATH上の openssl を使う場合に必要
-        > * `make gcc` は openssl をソースファイルから make する場合に必要
+        > * `make` と `gcc` は openssl をソースファイルから make する場合に必要
         > * `gcc-mingw-w64-x86-64` は Mingw-w64 で openssl.exe を作る場合に必要
         > * `cmake` と `ninja` は `oqsprovider`、`liboqs` などをビルドする場合に必要
         > * `autoconf` は `LibreSSL` git repo の `configure.ac` から `configure` を作成する場合に必要
@@ -47,7 +48,7 @@
           > * `automake` は `LibreSSL` <!--(少なくとも libressl-v4.1.0 )-->をビルドする場合に必要
           > * `perl` はソースファイルから生成された FIPS プロバイダーを実行する場合に必要(Mingw-w64 の場合は不要)
 
-    * 耐量子計算機暗号の測定結果を得る場合:
+    * 耐量子計算機暗号の計測結果を得る場合:
 
       1. Python 3 とその外部ライブラリまたはパッケージ `pyyaml`、 `tabulate` などをインストール
 
@@ -85,13 +86,13 @@
 
     その後、以下のスクリプトを実行
 
-## 実行PATH上のopensslコマンドの測定結果を描画する場合
+## 実行PATH上のopensslコマンドの計測結果を描画する場合
 
 ```bash
 ./plot_openssl_speed_all.sh -s 1
 ```
 
-> * オプションの `-s 1` は、各暗号アルゴリズムの測定時間を1秒に短縮するためのものです。
+> * オプションの `-s 1` は、各暗号アルゴリズムの計測時間を1秒に短縮するためのものです。
 >   * 全体の傾向をつかめ、バラツキの小さな計測を行う際には指定せずご実行下さい。
 >   * 以下の図は指定せずに実行した結果になります。
 > * LibreSSL に対しては、(少なくとも 4.1.0 の時点において) `openssl speed` コマンドが `-seconds` オプションを有しておらずエラーとなるため指定しても無視されます。
@@ -122,9 +123,9 @@ Results are in:
 ![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_libressl_2_8_3.png)
 <!-- ![graphs](./figs/all_graphs_libressl_2_8_3.png) -->
 
-## 指定したバージョン(tag)をコンパイルし得たopensslコマンドの測定結果を描画する場合
+## 指定したバージョン(tag)をコンパイルし得たopensslコマンドの計測結果を描画する場合
 
-例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.7` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの測定結果と、それを Mingw-w64 (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での測定結果も図示する場合。
+例えば、[tag](https://github.com/openssl/openssl) として `openssl-3.0.7` のソースコードからその実行環境用にコンパイルした `openssl` コマンドでの計測結果と、それを Mingw-w64 (x86_64-w64-mingw32-gcc) でクロスコンパイルした Windows OS 用 `openssl.exe` での計測結果も図示する場合。
 
 ```bash
 ./plot_openssl_speed_all.sh -s 1 openssl-3.0.7 openssl-3.0.7-mingw
@@ -136,18 +137,18 @@ bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1q openssl-3.0.7 OpenSSL_1
 ```
 -->
 
-> * tagの後ろに`-mingw`を付けることで Windowsバイナリ openssl.exe が make され、WSL上ではその測定結果のグラフ画像も保存されます。WSL以外では Windowsバイナリ実行環境も構築する必要があります。
+> * tagの後ろに`-mingw`を付けることで Windowsバイナリ openssl.exe が make され、WSL上ではその計測結果のグラフ画像も保存されます。WSL以外では Windowsバイナリ実行環境も構築する必要があります。
 > * 以下の例で示しております openssl-3.0.5 には[脆弱性](https://www.openssl.org/news/vulnerabilities.html)があります。修正済または最新の [OpenSSL](https://github.com/openssl/openssl) (またはその代替プログラム)をご使用下さい。
 
 格納されたグラフ画像一覧の例(ソースからコンパイルした openssl-3.0.5):
 ![graphs](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/all_graphs_3_0_5.png)
 <!-- ![graphs](./figs/all_graphs_3_0_5.png) -->
 
-## 耐量子計算機暗号の測定結果を描画する場合
+## 耐量子計算機暗号の計測結果を描画する場合
 
-`plot_openssl_speed_all.sh` v1.0.0以降では、opensslコマンドが liboqs 及び oqs-provider に対応している場合に、そこで利用可能な耐量子計算機暗号の処理速度についても測定し描画します。また、[[pq-sig-zoo]]及び[[ebats]]で公開されている size や cycle 数との比較の描画も可能です。
+`plot_openssl_speed_all.sh` v1.0.0以降では、opensslコマンドが liboqs 及び oqs-provider に対応している場合に、そこで利用可能な耐量子計算機暗号の処理速度についても計測し描画します。また、[[pq-sig-zoo]]及び[[ebats]]で公開されている size や cycle 数との比較の描画も可能です。
 
-[openssl](https://github.com/openssl/openssl), [oqs-provider](https://github.com/open-quantum-safe/oqs-provider/), [liboqs](https://github.com/open-quantum-safe/liboqs)の tag がそれぞれ、`openssl-3.3.1`, `0.6.1`, `0.10.1` の openssl コマンドをコンパイルし、その測定結果を描画する場合は、以下のように引数(openssl-type)を指定します。
+[openssl](https://github.com/openssl/openssl), [oqs-provider](https://github.com/open-quantum-safe/oqs-provider/), [liboqs](https://github.com/open-quantum-safe/liboqs)の tag がそれぞれ、`openssl-3.3.1`, `0.6.1`, `0.10.1` の openssl コマンドをコンパイルし、その計測結果を描画する場合は、以下のように引数(openssl-type)を指定します。
 
 ```bash
 ./plot_openssl_speed_all.sh -s 1 openssl-3.3.1-oqsprovider0.6.1-liboqs0.10.1
@@ -163,7 +164,7 @@ master/main ブランチの場合は、以下のように引数(openssl-type)を
 
 ## グラフから読み取れることと補足
 
-処理速度は様々な要因により変わるため、あくまで[こちらの測定環境](#測定環境)における参考です。また、処理速度が速いというだけで、**脆弱**な暗号アルゴリズムや、各用途で求められる**セキュリティレベルを満たさないアルゴリズム**を選択しないようにご注意下さい。
+処理速度は様々な要因により変わるため、あくまで[こちらの計測環境](#計測環境)における参考です。また、処理速度が速いというだけで、**脆弱**な暗号アルゴリズムや、各用途で求められる**セキュリティレベルを満たさないアルゴリズム**を選択しないようにご注意下さい。
 
 > どのような用途においてどのようなアルゴリズムを用いるべきかなどにつきましては、もし必要でしたら勉強会などに呼んで頂ければ解説致します。
 
@@ -473,7 +474,7 @@ Keccak由来関数の処理速度の比較も以下に示しておきます。
   * ただし、keyed-hash として付け足される処理（鍵処理）により、小さなメッセージの処理速度が、特に128ビットセキュリティにおいて、遅くなっていることが分ります。
 * `KECCAK-KMAC*`は `KMAC` の鍵処理を省いた部分のため、`SHAKE*`と処理速度がほぼ同じになっていることが分ります。
 
-## 測定対象の暗号アルゴリズムを変更する場合
+## 計測対象の暗号アルゴリズムを変更する場合
 
 `./plot_openssl_speed_all.sh` 中の関数 `plot_graph_asymmetric()`、 `plot_graph_symmetric()` 内の記述をご編集下さい。前者は公開鍵暗号/デジタル署名用、後者は共通鍵暗号/ハッシュ関数用になります。
 
@@ -491,7 +492,7 @@ Keccak由来関数の処理速度の比較も以下に示しておきます。
 ```
 -->
 
-例えば、以下のように記述すると、サポートされている `eddsa` `ecdsa` デジタル署名の測定結果のグラフが `ed_ecdsa.png`　に、そのグラフの元となったデータファイルが `ed_ecdsa.dat` に、測定時ログが `eddsa.log` 及び `ecdsa.log` にそれぞれ保存されます。
+例えば、以下のように記述すると、サポートされている `eddsa` `ecdsa` デジタル署名の計測結果のグラフが `ed_ecdsa.png`　に、そのグラフの元となったデータファイルが `ed_ecdsa.dat` に、計測時ログが `eddsa.log` 及び `ecdsa.log` にそれぞれ保存されます。
 
 ```bash
 ${PLOT_SCRIPT} -o "./${GRA_DIR}/ed_ecdsa.png" eddsa ecdsa
@@ -607,7 +608,7 @@ sha256           30840.78k    88357.72k   199311.27k   292801.60k   334301.56k  
 
 ### "sig_ver_keygen" TABLE_TYPE
 
-v1.0.0以降でデジタル署名の測定結果の比較に使用するフォーマット。
+v1.0.0以降でデジタル署名の計測結果の比較に使用するフォーマット。
 keygen/sのデータが無い場合にはダミーとして`0`を入れてください。
 
 > `plot_openssl_speed.sh` コマンドの `-l` オプションで`TABLE_TYPE`を指定する場合には、一番右の列から連続する`0`の列を空白にすることも可能です。
@@ -625,7 +626,7 @@ mldsa44                      14595.0    40081.0    30223.2
 
 ### "dec_enc_keygen_dh" TABLE_TYPE
 
-v1.0.0以降でデジタル署名以外の公開鍵暗号及びDH鍵共有方式の測定結果の比較に使用するフォーマット。対応する列のデータが無い場合にはダミーとして`0`を入れてください。
+v1.0.0以降でデジタル署名以外の公開鍵暗号及びDH鍵共有方式の計測結果の比較に使用するフォーマット。対応する列のデータが無い場合にはダミーとして`0`を入れてください。
 
 > `plot_openssl_speed.sh` コマンドの `-l` オプションで`TABLE_TYPE`を指定する場合には、一番右の列から連続する`0`の列を空白にすることも可能です。
 
@@ -731,7 +732,7 @@ ecdh(nistp256)  0.0000s  20643.0
   * x座標に表示させる名前のアルゴリズム名から抜き出したパラメータ
   * (パラメータ値でソートする場合を想定したものですが)v1.0.0 の時点では使用していなため、ダミー値を入れてもよいです(が空白にしてはなりません)。
 
-## 測定環境
+## 計測環境
 
 ### WSL2 Ubuntu
 
@@ -748,9 +749,9 @@ Linux 5.10.102.1-microsoft-standard-WSL2 x86_64
 ```
 
 ```console
-$ awk '$1$2 == "modelname" {$1="";$2="";$3=""; print substr($0,4); exit;}' /proc/cpuinfo
+$ awk '{if($1$2 == "modelname"){$1="";$2="";$3=""; model=substr($0,4)}; if($1$2 == "cpuMHz") {max=$4/1000; printf "%s (%.2fGHz)\n",model,max; exit;}}' /proc/cpuinfo
 
-Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz
+Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz (1.61GHz)
 ```
 
 実行PATH中のopenssl:
@@ -804,7 +805,7 @@ openssl-3.0.4-mingw:
 ![openssl-3.0.4-mingw](./figs/all_graphs_3_0_4_mingw.png)
 -->
 
-<!-- OpenSSL_1_1_1p の結果は「実行PATH上のopensslコマンドで測定する場合」により得られた OpenSSL 1.1.1f の結果とほぼ同じため省略
+<!-- OpenSSL_1_1_1p の結果は「実行PATH上のopensslコマンドで計測する場合」により得られた OpenSSL 1.1.1f の結果とほぼ同じため省略
 
 ```bash
 bash -c "./plot_openssl_speed_all.sh -s 1 OpenSSL_1_1_1p OpenSSL_1_1_1p-mingw"
@@ -934,6 +935,6 @@ openssl コマンドの version により実装されていないオプション
 GitHubアカウントをお持ちでしたら、フォロー及び Star 頂ければと思います。リンクも歓迎です。
 
 * [Follow (クリック後の画面左)](https://github.com/KazKobara)
-* [Star (クリック後の画面右上)](https://github.com/KazKobara/tips-jp)
+* [Star (クリック後の画面右上)](https://github.com/KazKobara/plot-openssl-speed)
 
 [homeに戻る](https://kazkobara.github.io/README-jp.html)

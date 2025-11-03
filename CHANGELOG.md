@@ -4,7 +4,21 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.2.2] -->
+<!-- ## [Unreleased 1.3.1] -->
+
+## [1.3]
+
+### Added
+
+- [plot_pairing_bench.sh](./plot_pairing_bench.sh)
+  - and `-l pairing [-u SPEED_UNIT]` option in [plot_openssl_speed.sh](./plot_openssl_speed.sh) to work with it.
+- `-v` option to show the version.
+
+### Changed
+
+- Command option error messages to show only the help option `-h`.
+- `plot_openssl_speed*.sh` to enable `source utils/common.sh` wherever it is run.
+- `plot_openssl_speed_all.sh` to apply `speed_pqcsigs_in_default_provider"${V_FOR_PATCH}".patch` only for OpenSSL 3.5.
 
 ## [1.2.1]
 

@@ -6,18 +6,13 @@ set -e
 # set -x
 
 ### Patch management ###
-# For OpenSSL 3.5.0 and newer,
-# whether "Error while initializing signing data structs" is fixed or not
-# cf. https://github.com/openssl/openssl/issues/27108
-SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED="False"  # turn this "True" after fixed
-if [ "${SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED}" == "True" ]; then
-    # if fixed, no patch
-    PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER="False"
-else
-    # if not fixed, fix it by applying patch 
-    PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER="True"
-    SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED="True"
-fi
+# OpenSSL 3.5.0 to at least 3.5.4 cause
+# "Error while initializing signing data structs"
+# for `openssl speed ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}`
+# Making the following "True" applies a workaround patch in
+# https://github.com/openssl/openssl/issues/27108 to fix this error.
+# This error is fixed in OpenSSL 3.6.0.
+PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER="True"  # applied only to OpenSSL 3.5
 
 ### Params ###
 COMMAND=$(basename "$0")
@@ -44,7 +39,15 @@ mkdir -p "${TMP_DIR}"
 ALLOWED_DIR=$(realpath ${TMP_DIR})
 
 ### functions ###
-. ./utils/common.sh
+# . ./utils/common.sh
+COMMON_SCRIPT="$(dirname "$(readlink -f "$0")")"/utils/common.sh
+if [ -s "${COMMON_SCRIPT}" ]; then
+    # shellcheck source=./utils/common.sh
+    . "${COMMON_SCRIPT}"
+else
+    echo "Error: failed to source ${COMMON_SCRIPT}!"
+    exit 3
+fi
 
 usage () {
     echo " Wrapper of $(basename "${PLOT_SCRIPT}") v${VER}"
@@ -58,9 +61,9 @@ usage () {
     echo "     - 'openssl_type' is a form of"
     echo "       '[${TAG_FIPS}]openssl_tag[(-oqsprovider_type|${TAG_MINGW})]'"
     echo "       such as "
-    echo "       'openssl-3.4.1-oqsprovider0.9.0-liboqs0.13.0'"
-    echo "       'openssl-3.5.0${TAG_MINGW}'"
-    echo "       '${TAG_FIPS}-openssl-3.1.2'"
+    echo "       'openssl-3.6.0-oqsprovider0.10.0-liboqs0.14.0'"
+    echo "       'openssl-3.6.0${TAG_MINGW}'"
+    echo "       '${TAG_FIPS}openssl-3.1.2'"
     echo "       'master-oqsprovidermain-liboqsmain' ."
     echo "     - 'openssl_type' is also used as"
     echo "       a folder name to work under the ./tmp folder"
@@ -72,7 +75,7 @@ usage () {
     echo
     echo "     - 'openssl_tag' is a tag or branch name."
     echo "     - For the OpenSSL project, it may be"
-    echo "       'openssl-3.5.0', 'master', and so on,"
+    echo "       'openssl-3.6.0', 'master', and so on,"
     echo "        in accordance with https://github.com/openssl/openssl ."
     echo
     echo "     - For forked openssl projects 'openssl_tag' is a form of"
@@ -100,7 +103,7 @@ usage () {
     echo "     [-r run_mode] 'run_mode' is one of 'build_only', 'full',"
     echo "                  'skip_symmetric', or 'skip_asymmetric'"
     echo "                  (default: '${DEFAULT_RUN_MODE}')"
-    echo "     [-(h|?)]     Show this usage"
+    echo "     [-h]         Show this usage"
     echo
 }
 
@@ -141,14 +144,12 @@ plot_graph_asymmetric () {
         # ${PLOT_SCRIPT} -o "./${GRA_DIR}/pqc_kem_def.png" ML-KEM-{512,768,1024}
         "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/pqc_kem_def.png" ML-KEM-{512,768,1024}
     fi
-    if [ "${SPEED_PQCSIGS_IN_DEFAULT_PROVIDER_FIXED}" == "True" ]; then
-        if [ -s "./${GRA_DIR}/pqc_sig_def.png" ]; then
-            echo
-            echo "Notice: './${GRA_DIR}/pqc_sig_def.png' already exists."
-            echo "  Move or remove it to renew it."
-        else
-            "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/pqc_sig_def.png" ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}
-        fi
+    if [ -s "./${GRA_DIR}/pqc_sig_def.png" ]; then
+        echo
+        echo "Notice: './${GRA_DIR}/pqc_sig_def.png' already exists."
+        echo "  Move or remove it to renew it."
+    else
+        "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/pqc_sig_def.png" ML-DSA-{44,65,87} SLH-DSA-SHA{2,KE}-{128,192,256}{s,f}
     fi
 
     ## Post-Quantum (Open Quantum Safe)
@@ -729,14 +730,15 @@ set_with_oqsprovider () {
             echo "Notice: skip 'fullbuild.sh'."
         else
             if [ "${PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER}" == "True" ]; then
-                if [ "${OPENSSL_BRANCH}" == "openssl-3.5.0" ]; then
-                    V_FOR_PATCH="_3_5_0"
-                else
-                    V_FOR_PATCH=""
+                if [[ "${OPENSSL_BRANCH}" == "openssl-3.5"* ]]; then
+                    if [ "${OPENSSL_BRANCH}" == "openssl-3.5.0" ]; then
+                        V_FOR_PATCH="_3_5_0"
+                    else
+                        V_FOR_PATCH=""
+                    fi
                 fi
                 # apply patch but avoid exit by set -e
-                # sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider.patch \; LDFLAGS/" scripts/fullbuild.sh
-                  sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& { ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider${V_FOR_PATCH}.patch \|\| true \;} \&\& LDFLAGS/" scripts/fullbuild.sh
+                sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& { ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider${V_FOR_PATCH}.patch \|\| true \;} \&\& LDFLAGS/" scripts/fullbuild.sh
             fi
             # can comment out the next sed command if git protocol is allowed in your network
             sed -i".org" 's/git:\/\/git.openssl.org/https:\/\/github.com\/openssl/' scripts/fullbuild.sh
@@ -779,7 +781,7 @@ set_openssl_in_path () {
     OPENSSL="openssl"
     # `openssl version` shall run first to determine the folder name
     OPENSSL_VER=$(${OPENSSL} version)
-    # TODO: run onece for OPENSSL_VER_NOSPACE
+    # TODO: run once for OPENSSL_VER_NOSPACE
     OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
     # local tmp=${OPENSSL_VER#* }; openssl_ver_num_only=${tmp%% *}
     # openssl_in_path_dir="default_openssl_${openssl_ver_num_only}"
@@ -847,15 +849,17 @@ set_openssl_tagged () {
                 # ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
                 ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type_dir}"
                 if [ "${PATCH_SPEED_PQCSIGS_IN_DEFAULT_PROVIDER}" == "True" ]; then
-                    if [ "${tag}" == "openssl-3.5.0" ]; then
-                        V_FOR_PATCH="_3_5_0"
-                    else
-                        V_FOR_PATCH=""
+                    if [[ "${tag}" == "openssl-3.5"* ]]; then
+                        if [ "${tag}" == "openssl-3.5.0" ]; then
+                            V_FOR_PATCH="_3_5_0"
+                        else
+                            V_FOR_PATCH=""
+                        fi
+                        (
+                            cd "${openssl_type_dir}" && \
+                            { ${GIT} apply ../../utils/speed_pqcsigs_in_default_provider"${V_FOR_PATCH}".patch || true;}  # avoid exit by set -e
+                        )
                     fi
-                    (
-                        cd "${openssl_type_dir}" && \
-                        { ${GIT} apply ../../utils/speed_pqcsigs_in_default_provider"${V_FOR_PATCH}".patch || true;}  # avoid exit by set -e
-                    )
                 fi
                 ;;
             libressl|LibreSSL|LIBRESSL)
@@ -1010,12 +1014,14 @@ set_openssl_tagged () {
 # SPEED_OPT=""  # default: 3s for symmetric, 10s for asymmetric
 ARR_SPEED_OPT=()  # default: 3s for symmetric, 10s for asymmetric
 RUN_MODE="${DEFAULT_RUN_MODE}"  # default
-while getopts 's:r:h?' OPTION
+while getopts 's:r:vh?' OPTION
 do
     case $OPTION in
         s) s_arg=${OPTARG};;  # openssl speed -seconds
         r) RUN_MODE=${OPTARG};;
-        h|?|*) usage; exit 2;;
+        h) usage; exit 0;;
+        v) echo " ${COMMAND} v${VER}"; exit 0;;
+        *) echo "Use '-h' option for help!"; exit 1;;
     esac
 done
 shift $((OPTIND - 1))
@@ -1028,8 +1034,9 @@ if [ -n "${s_arg}" ]; then
     else
         echo
         echo "Error: invalid '${s_arg}' for the '-s' option!"
+        echo "       Use '-h' option for help!";
         echo
-        usage; exit 2
+        exit 2
     fi
 fi
 

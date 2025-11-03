@@ -11,18 +11,16 @@ DEFAULT_OPENSSL="openssl"
 DEFAULT_GRA_FILE="./graph.png"
 DEFAULT_DAT_FILE="${DEFAULT_GRA_FILE%.*}.dat"
 ALLOWED_DIR=$(realpath ./)
-UTILS=utils/common.sh
 
 ### functions ###
-if [ -s "./${UTILS}" ]; then
+SCRIPT_ROOT="$(dirname "$(readlink -f "$0")")"
+COMMON_SCRIPT="${SCRIPT_ROOT}"/utils/common.sh
+# COMMON_SCRIPT="$(dirname "$(readlink -f "$0")")"/utils/common.sh
+if [ -s "${COMMON_SCRIPT}" ]; then
     # shellcheck source=./utils/common.sh
-    . ./${UTILS}
-elif [ -s "../../${UTILS}" ]; then
-    # if called by plot_openssl_speed_all.sh
-    # shellcheck source=./utils/common.sh
-    . ../../${UTILS}
+    . "${COMMON_SCRIPT}"
 else
-    echo "Error: failed to source ${UTILS}!"
+    echo "Error: failed to source ${COMMON_SCRIPT}!"
     exit 3
 fi
 
@@ -63,7 +61,9 @@ usage () {
     echo "     [-t 'string']"
     echo "         String to append to the graph title, especially to supplement"
     echo "         execution environment info when plotting given data."
-    echo "     [-(h|?)]"
+    echo "     [-u SPEED_UNIT]"
+    echo "         Specify either 'msec' or 'cycles' with '-l pairing' option."
+    echo "     [-h]"
     echo "         Show this usage."
     echo
     echo "   where:"
@@ -292,24 +292,32 @@ measure () {
             fi
         elif [ "${ALGO3}" == "rsa" ]; then
             # --- rsa_num_field==7 (w/o keygen) ---
-            # OpenSSL 1 etc.
+            # OpenSSL 1 3.0.5 rsa (w/o bits) rsa<bits> (w/ bits), 3.1.2 rsa (w/o bits) etc. (3.1.2 fips-provider fails)
             #                   sign    verify    sign/s verify/s
             # rsa  512 bits 0.000040s 0.000003s  25224.3 393957.1  # rsa_num_field
             #
             # --- rsa_num_field==11 (w/o keygen) ---
-            # OpenSSL 3 etc.
+            # OpenSSL 3.5.0 3.5.4 3.6.0 default-provider rsa (w/o bits) etc. (fips-provider fails)
             #                    sign    verify    encrypt   decrypt   sign/s verify/s  encr./s  decr./s
             # rsa   512 bits 0.000041s 0.000002s 0.000003s 0.000049s  24660.6 425189.4 338336.9  20222.1
             #
             # --- rsa_num_field_enc==6 && rsa_num_field_sig==6 (w/ keygen) ---
-            # OpenSSL 3.5 fips-provider rsa<bits>
+            # OpenSSL 3.5.0 3.5.4 3.6.0 fips-provider rsa<bits>
             #               keygen    encaps    decaps keygens/s  encaps/s  decaps/s  # rsa_num_field_enc
             #    rsa7680 11.820000s 0.000361s 0.050000s       0.1    2770.0      20.0
             #               keygen     signs    verify keygens/s    sign/s  verify/s  # rsa_num_field_sig
             #    rsa7680 17.970000s 0.052632s 0.000294s       0.1      19.0    3403.0
             #
+            # --- rsa_num_field==7 && rsa_num_field_enc==6 && rsa_num_field_sig==6 (w/ keygen) ---
+            #                    sign    verify    sign/s verify/s
+            # rsa  2048 bits 0.000554s 0.000017s   1806.0  60343.0
+            #                   keygen    encaps    decaps keygens/s  encaps/s  decaps/s
+            #        rsa2048 0.042083s 0.000019s 0.000560s      23.8   52421.0    1787.0
+            #                   keygen     signs    verify keygens/s    sign/s  verify/s
+            #        rsa2048 0.046818s 0.000557s 0.000016s      21.4    1794.0   60924.0
+            #
             # --- rsa_num_field==11 && rsa_num_field_enc==6 && rsa_num_field_sig==6 ---
-            # OpenSSL 3.5 default-provider
+            # OpenSSL 3.5.0 3.5.4 3.6.0 default-provider rsa<bits>
             #                   sign    verify    encrypt   decrypt   sign/s verify/s  encr./s  decr./s
             # rsa  1024 bits 0.000127s 0.000008s 0.000009s 0.000144s   7875.8 117815.0 114327.8   6936.4
             # rsa  3072 bits 0.002865s 0.000052s 0.000050s 0.002469s    349.0  19078.0  20088.9    405.0
@@ -552,8 +560,13 @@ set_gra_title () {
     GRA_OPT_COMMON="\
         set key ${GRA_KEY_POS} tmargin horizontal;\
         "
-    GRA_TITLE_ONE_LINE="Depicted by ${COMMAND} v${VER} ${GRA_TITLE_APPENDIX}"
-    GRA_TITLE_TWO_LINES="Depicted by ${COMMAND} v${VER} \n${GRA_TITLE_APPENDIX}"
+    if [ "${TABLE_TYPE}" == "pairing" ] && [ -s "${SCRIPT_ROOT}"/pairing_bench.sh ]; then
+        COMMAND_FINAL="pairing_bench.sh with ${COMMAND}"
+    else
+        COMMAND_FINAL=${COMMAND}
+    fi
+    GRA_TITLE_ONE_LINE="Depicted by ${COMMAND_FINAL} v${VER} ${GRA_TITLE_APPENDIX}"
+    GRA_TITLE_TWO_LINES="Depicted by ${COMMAND_FINAL} v${VER} \n${GRA_TITLE_APPENDIX}"
     echo "Title length: ${#GRA_TITLE_ONE_LINE}"
     # if [ "${#GRA_TITLE_ONE_LINE}" -gt 65 ] && [ "${NUM_OF_RECORDS}" -le 8 ]; then
     if [ "${#GRA_TITLE_ONE_LINE}" -gt 70 ]; then
@@ -588,7 +601,7 @@ plot_data () {
         ## This does not work.
         # GRA_YTICS="stats \"./$DAT\" using 1:7 nooutput; if ( (100000 < STATS_max_y) && (STATS_max_y < 1000000) ) { set ytics ('0' 0, '100,000' 1e5, '200,000' 2e5, '300,000' 3e5, '400,000' 4e5, '500,000' 5e5, '600,000' 6e5, '700,000' 7e5, '800,000' 8e5, '900,000' 9e5)};"
         XTICS_ROTATE_ANGLE="-10"
-        SPEED_UNIT="k bytes/s"
+        [ -z "${SPEED_UNIT}" ] && SPEED_UNIT="k bytes/s"
         if [ "${NUM_FIELD}" -ge 7 ]; then
             GRA_CLM7="\"./${DAT}\" using ${GRA_CLM}7:xtic(1) with ${GRA_TYPE} title '16,384 bytes',"
         else
@@ -606,7 +619,17 @@ plot_data () {
     else
         # asymmetric algo
         XTICS_ROTATE_ANGLE="-15"
-        SPEED_UNIT="operations/s"
+        if [ -z "${SPEED_UNIT}" ]; then
+            local tmp
+            # guess SPEED_UNIT (for -l pairing)
+            # from the first comment line in ${DAT}
+            tmp="$(awk '/^#/ {print $2; exit} ' "${DAT}")"
+            if [ "${tmp}" == "msec" ] || [ "${tmp}" == "cycles" ]; then
+                SPEED_UNIT="${tmp}"
+            else
+                SPEED_UNIT="operations/s"
+            fi
+        fi
         if [ "${TABLE_TYPE}" == "sig_ver_keygen" ]; then
             # The order '(verify or enc)/s' to '(sign or dec)/s' is for the compatibility to v0.0.0.
             GRA_PLOT=" \
@@ -701,6 +724,14 @@ plot_data () {
             GRA_PLOT=" \
                 \"./${DAT}\" using ((2500000/\$3)*1000):xtic(1) with ${GRA_TYPE} title 'verify/s', \
                 \"./${DAT}\" using ((2500000/\$2)*1000):xtic(1) with ${GRA_TYPE} title 'sign/s', \
+                "
+        elif [ "${TABLE_TYPE}" == "pairing" ]; then
+            # [ -z "${SPEED_UNIT}" ] && SPEED_UNIT="msec"
+            # for 'algo loop fexp pairing'
+            GRA_PLOT=" \
+                \"./${DAT}\" using ${GRA_CLM}2:xtic(1) with ${GRA_TYPE} title 'loop', \
+                \"./${DAT}\" using ${GRA_CLM}3:xtic(1) with ${GRA_TYPE} title 'fexp', \
+                \"./${DAT}\" using ${GRA_CLM}4:xtic(1) with ${GRA_TYPE} title 'pairing', \
                 "
         else
             echo "Unknown TABLE_TYPE: ${TABLE_TYPE}"
@@ -823,9 +854,6 @@ optcheck_common () {
     [ -z "${GRA_FILE}" ] && GRA_FILE=${DEFAULT_GRA_FILE}
     [ -z "${DAT}" ] && DAT=${DEFAULT_DAT_FILE}
 
-    # usage() must be here since it depends on options
-    [ "${flagh}" == "1" ] && { usage; exit 2;}
-
     # arg check for -o and -d
     check_path "${ALLOWED_DIR}" "${GRA_FILE}"
     check_path "${ALLOWED_DIR}" "${DAT}"
@@ -881,8 +909,9 @@ optcheck_measure_plot () {
         else
             echo
             echo "Error: invalid '${s_arg}' for -s option!"
+            echo "       Use '-h' option for help!"
             echo
-            usage; exit 2
+            exit 2
         fi
         if [[ "${OPENSSL_VER}" == "LibreSSL"* ]]; then
             echo
@@ -927,8 +956,8 @@ OPENSSL=${DEFAULT_OPENSSL}
 
 s_arg=""; t_arg=""
 ARR_SPEED_OPT=()  # default: 3s for symmetric, 10s for asymmetric
-flagh=0; flagp=0
-while getopts 'd:l:o:p:s:t:h?' OPTION
+flagp=0
+while getopts 'd:l:o:p:s:t:u:vh?' OPTION
 do
     case $OPTION in
         d) DAT="${OPTARG}";;                # override
@@ -937,7 +966,10 @@ do
         p) flagp=1;OPENSSL="${OPTARG}";;      # override
         s) s_arg=${OPTARG};;  # openssl speed -seconds
         t) t_arg=${OPTARG};;
-        h|?|*) flagh=1;;
+        u) SPEED_UNIT=${OPTARG};;
+        v) echo " ${COMMAND} v${VER}"; exit 0;;
+        h) usage; exit 0;;
+        *) echo "Use '-h' option for help!"; exit 1;;
     esac
 done
 shift $((OPTIND - 1))
