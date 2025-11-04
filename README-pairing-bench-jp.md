@@ -1,4 +1,4 @@
-# pairing_bench.sh:双線形写像の処理速度を簡単に計測しグラフ描画する方法
+# pairing_bench.sh: 双線形写像の処理速度を簡単に計測しグラフ描画する方法
 
 [English <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/gb.svg" width="20" alt="English" title="English"/>](./README-pairing-bench.md)
 
