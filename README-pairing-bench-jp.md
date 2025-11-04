@@ -20,11 +20,17 @@ v1.3 時点で、以下のオープンソースリポジトリで利用可能な
 
 Relic 0.7.0 (Relic 0.7.0 リポジトリ内の preset/x64-pbc-*.sh):
 
+![relic0.7.0_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/relic0.7.0_time.png)
+<!--
 ![relic0.7.0_time](./figs/pairing/relic0.7.0_time.png)
+-->
 
 Miracle v4.1:
 
+![miraclev4.1_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/miraclev4.1_time.png)
+<!--
 ![miraclev4.1_time](./figs/pairing/miraclev4.1_time.png)
+-->
 
 MCL 3.04:
 
@@ -34,19 +40,28 @@ MCL 3.04:
 
 128ビットセキュリティ:
 
+![pairing_128bs_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/pairing_128bs_mclv3.04_relic0.7.0_miraclev4.1_time.png)
+<!--
 ![pairing_128bs_time](./figs/pairing/pairing_128bs_mclv3.04_relic0.7.0_miraclev4.1_time.png)
+-->
 
 > 128ビットセキュリティに対しては、[[eccbench21]]の結果も参考になります。
 
 192ビットセキュリティ:
 
+![pairing_192bs_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/pairing_192bs_relic0.7.0_miraclev4.1_time.png)
+<!--
 ![pairing_192bs_time](./figs/pairing/pairing_192bs_relic0.7.0_miraclev4.1_time.png)
+-->
 
 > [[ISO/IEC 15946-5:2022]]の Annex D.3.4 では、 B24-P559 、 BLS24559 又は BLS24_559 に相当するパラメータが掲載されています。
 
 256ビットセキュリティ:
 
+![pairing_256bs_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/pairing_256bs_relic0.7.0_miraclev4.1_time.png)
+<!--
 ![pairing_256bs_time](./figs/pairing/pairing_256bs_relic0.7.0_miraclev4.1_time.png)
+-->
 
 > [[ISO/IEC 15946-5:2022]]の Annex D.3.5 では、 B48-P581 、 BLS48581 又は BLS48_581 に相当するパラメータが掲載されています。
 

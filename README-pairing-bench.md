@@ -18,11 +18,17 @@ In the legend on the top of the following figures, `loop` denotes the core loopi
 
 Relic 0.7.0 (`preset/x64-pbc-*.sh` in the Relic 0.7.0 repository)
 
+![relic0.7.0_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/relic0.7.0_time.png)
+<!--
 ![relic0.7.0_time](./figs/pairing/relic0.7.0_time.png)
+-->
 
 Miracle v4.1:
 
+![miraclev4.1_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/miraclev4.1_time.png)
+<!--
 ![miraclev4.1_time](./figs/pairing/miraclev4.1_time.png)
+-->
 
 MCL 3.04:
 
@@ -32,19 +38,28 @@ Cf. the figure of 128-bit security below.
 
 128-bit security:
 
+![pairing_128bs_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/pairing_128bs_mclv3.04_relic0.7.0_miraclev4.1_time.png)
+<!--
 ![pairing_128bs_time](./figs/pairing/pairing_128bs_mclv3.04_relic0.7.0_miraclev4.1_time.png)
+-->
 
 > For 128-bit security, the results in [[eccbench21]] are useful as well.
 
 192-bit security:
 
+![pairing_192bs_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/pairing_192bs_relic0.7.0_miraclev4.1_time.png)
+<!--
 ![pairing_192bs_time](./figs/pairing/pairing_192bs_relic0.7.0_miraclev4.1_time.png)
+-->
 
 > Annex D.3.4 of [[ISO/IEC 15946-5:2022]] gives parameters corresponding to B24-P559, BLS24559, or BLS24_559.
 
 256-bit security:
 
+![pairing_256bs_time](https://media.githubusercontent.com/media/KazKobara/plot-openssl-speed/main/figs/pairing/pairing_256bs_relic0.7.0_miraclev4.1_time.png)
+<!--
 ![pairing_256bs_time](./figs/pairing/pairing_256bs_relic0.7.0_miraclev4.1_time.png)
+-->
 
 > Annex D.3.5 of [[ISO/IEC 15946-5:2022]] gives parameters corresponding to B48-P581, BLS48581, or BLS48_581.
 
