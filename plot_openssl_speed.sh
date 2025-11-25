@@ -20,7 +20,7 @@ if [ -s "${COMMON_SCRIPT}" ]; then
     # shellcheck source=./utils/common.sh
     . "${COMMON_SCRIPT}"
 else
-    echo "Error: failed to source ${COMMON_SCRIPT}!"
+    echo "Error: failed to source ${COMMON_SCRIPT}!" >&2
     exit 3
 fi
 
@@ -343,7 +343,7 @@ measure () {
             fi
             if [ "${rsa_num_field}" != "7" ] && [ "${rsa_num_field}" != "11" ] && \
                     [ "${rsa_num_field_enc}" != "6" ] && [ "${rsa_num_field_sig}" != "6" ]; then
-                echo "Error: unknown data format for ${algo}!"
+                echo "Error: unknown data format for ${algo}!" >&2
                 echo "       Add it as a new one."
                 exit 3
             fi
@@ -470,7 +470,7 @@ measure () {
                 echo "         differs from the previous one (${PRE_TABLE_TYPE})!"
                 echo
                 continue
-                # echo "Error: CUR_TABLE_TYPE (${CUR_TABLE_TYPE}) differs from"
+                # echo "Error: CUR_TABLE_TYPE (${CUR_TABLE_TYPE}) differs from" >&2
                 # echo "       the previous one (${PRE_TABLE_TYPE})!"
                 # echo
                 # exit 2
@@ -521,7 +521,7 @@ table_type () {
                 0|1) echo "Warning: ${DAT} has no appropriate table!";
                 return 1;;
                 # exit 1;;
-                *) echo "Error: unknown data format!";
+                *) echo "Error: unknown data format!" >&2;
                 return 1;;
                 # exit 1;;
             esac
@@ -529,7 +529,7 @@ table_type () {
         fi
     else
         echo
-        echo "Error: records are not in the same format!"
+        echo "Error: records are not in the same format!" >&2
         echo
         return 1
     fi
@@ -884,8 +884,8 @@ optcheck_measure_plot () {
         # -p /usr/bin/openssl or *openssl.exe
         if ! [[ "${OPENSSL: -7}" == openssl || "${OPENSSL: -11}" == openssl.exe ]]; then
             echo
-            echo "Error: '-p ${OPENSSL}' option accepts only the combination of 'openssl'"
-            echo "       command and the path to it!"
+            echo "Error: '-p ${OPENSSL}' option accepts only the combination of 'openssl'" >&2
+            echo "       command and the path to it!" >&2
             echo
             exit 2
         fi
@@ -894,7 +894,7 @@ optcheck_measure_plot () {
         if [ "${OPENSSL: 0: 28}" != "./util/wrap.pl -fips ./apps/" ]; then
             if [ "${OPENSSL}" != openssl ] && [ "${OPENSSL}" != openssl.exe ] && [ ! -s "${OPENSSL}" ]; then
                 echo
-                echo "Error: '${OPENSSL}' given by -p option does not exist!"
+                echo "Error: '${OPENSSL}' given by -p option does not exist!" >&2
                 echo
                 exit 2
             fi
@@ -908,7 +908,7 @@ optcheck_measure_plot () {
             ARR_SPEED_OPT=("-seconds" "${s_arg}")  # shall be an array to make "${ARR_SPEED_OPT[@]}" null
         else
             echo
-            echo "Error: invalid '${s_arg}' for -s option!"
+            echo "Error: invalid '${s_arg}' for -s option!" >&2
             echo "       Use '-h' option for help!"
             echo
             exit 2
@@ -942,7 +942,7 @@ optcheck_data_plot () {
     fi
     if [ "$1" == "0" ] && [ ! -s "${DAT}" ]; then
         echo
-        echo "Error: '${DAT}' does not exist!"
+        echo "Error: '${DAT}' does not exist!" >&2
         echo
         exit 2
     fi

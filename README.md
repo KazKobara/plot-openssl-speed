@@ -2,7 +2,7 @@
 
 [日本語 <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/jp.svg" width="20" alt="Japanese" title="Japanese"/>](./README-jp.md)
 
-* v1.3 added [pairing_bench.sh](./pairing_bench.sh) to measure and depict the processing speed of the bilinear map, or pairing ([README](./README-pairing-bench.md)).
+* v1.3 added [pairing_bench.sh](./pairing_bench.sh) to measure and depict the processing speed of the bilinear map, or pairing, ([README](./README-pairing-bench.md)).
 * v1.2 and newer support FIPS providers.
   * A list of FIPS-validated versions and their corresponding information can be found [in the middle of this link](https://openssl-library.org/source/).
 * v1 and newer support post-quantum cryptographies.

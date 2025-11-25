@@ -5,16 +5,23 @@ set -e
 # set -x
 
 ARCH=$(uname -m)
+UNAME_S="$(uname -s)"
 
 TMP_DIR="./tmp"
-# PAIRING_DIR="${TMP_DIR}/Pairing"                 # relative path
-PAIRING_DIR="$(readlink -f "${TMP_DIR}/Pairing")"  # absolute path
+TMP_PAIRING_DIR="${TMP_DIR}/Pairing" # can be a relative path
 
 GIT="git"
 # GIT="gh repo"
 GIT_CLONE="${GIT} clone"
 COMMAND=$(basename "$0")
 DIR_OF_COMMAND="$(dirname "$(readlink -f "$0")")"
+
+if [ "${UNAME_S}" == "Darwin" ]; then
+    # sed's commands other than s are incompatible between Linux (GNU) and macOS (BSD)
+    SED="gsed"
+else
+    SED="sed"
+fi
 
 show_version () {
     echo " ${COMMAND} with (data-plot mode of)$("${DIR_OF_COMMAND}"/plot_openssl_speed.sh -v)";
@@ -70,6 +77,7 @@ set_header () {
 # @details      See also
 #               https://github.com/relic-toolkit/relic/issues/77
 # @param[in]    $1: tag or branch name (default: main)
+# @param[in]    $2: # of bench (default: 10)
 # @param[in]    global TIME_OR_TSC: 'time' or 'tsc'
 # @param[in]    global PAIRING_DIR: dir for results (*.{log,dat,png})
 # @param[out]   global RELIC_DAT: data file name
@@ -78,10 +86,20 @@ measure_relic () {
     case "${TIME_OR_TSC}" in
         "tsc") relic_timer=CYCLE; timer_div="1";;
         "time") relic_timer=HREAL; timer_div="1000000";;  # msec/nanosec
-        *) echo "Error: unknown TIME_OR_TSC: '${TIME_OR_TSC}'!"; exit 1
+        *) echo "Error: unknown TIME_OR_TSC: '${TIME_OR_TSC}'!" >&2; exit 1
     esac
     local tag source_dir
     local bench=bench_pp
+    if [ -z "$2" ]; then
+        # While CMakeLists.txt's default is 100, it takes too time.
+        num_of_bench=10
+    else
+        if [[ "$2" =~ ^[0-9]+$ ]] ; then
+            num_of_bench="$2"
+        else
+            echo "Error: num_of_bench '$2' is not a number!" >&2; exit 1
+        fi
+    fi
     tag="$1"
     if [ -z "${tag}" ]; then
         tag=main
@@ -100,34 +118,62 @@ measure_relic () {
         ${GIT_CLONE} https://github.com/relic-toolkit/relic.git -b "${tag}" --depth 1 "${source_dir}"
     fi
     cd "${source_dir}" || exit 1
+    local relic_opsys
     if [ "${ARCH}" == x86_64 ]; then
-        PRESET_LIST="$(cd preset && ls -1 x64-pbc-*.sh)"
-        # as of 0.7.0
-        # minimal list:
-        # PRESET_LIST="x64-pbc-bn382.sh x64-pbc-bls12-381.sh x64-pbc-bls24-509.sh x64-pbc-bls48-575.sh"
-        # full list:
-        # PRESET_LIST="x64-pbc-afg16-510.sh x64-pbc-afg16-766.sh x64-pbc-bls12-377.sh x64-pbc-bls12-381.sh x64-pbc-bls12-446.sh x64-pbc-bls12-455.sh x64-pbc-bls12-638.sh x64-pbc-bls24-315.sh x64-pbc-bls24-317.sh x64-pbc-bls24-509.sh x64-pbc-bls48-575.sh x64-pbc-bn254.sh x64-pbc-bn382.sh x64-pbc-bn446.sh x64-pbc-fm16-765.sh x64-pbc-fm18-768.sh x64-pbc-kss16-330.sh x64-pbc-kss16-766.sh x64-pbc-kss18-354.sh x64-pbc-kss18-638.sh"
+        if [ "${UNAME_S}" == "Darwin" ]; then
+            relic_opsys=MACOSX
+            # TODO:
+            #   As of 0.7.0, at least the following preset/*.sh cause
+            #   compilation errors on Intel macOS regardless ${TIME_OR_TSC}):
+            #     x64-pbc-afg16-510.sh x64-pbc-afg16-766.sh
+            #     x64-pbc-bls12-377.sh x64-pbc-bls12-381.sh
+            #     x64-pbc-bn254.sh
+            #     x64-pbc-fm16-765.sh
+            #     x64-pbc-kss16-330.sh
+            #   So "cmake_default" below uses cmake directly as described
+            #   in the Compilation section of
+            #   https://github.com/relic-toolkit/relic/wiki/Building
+            #   which builds BN-P256 w/o tuning.
+            PRESET_LIST="cmake_default"
+        else
+            relic_opsys=LINUX
+            PRESET_LIST="$(cd preset && ls -1 x64-pbc-*.sh)"
+            # as of 0.7.0
+            # full list:
+            #   PRESET_LIST="x64-pbc-afg16-510.sh x64-pbc-afg16-766.sh x64-pbc-bls12-377.sh x64-pbc-bls12-381.sh x64-pbc-bls12-446.sh x64-pbc-bls12-455.sh x64-pbc-bls12-638.sh x64-pbc-bls24-315.sh x64-pbc-bls24-317.sh x64-pbc-bls24-509.sh x64-pbc-bls48-575.sh x64-pbc-bn254.sh x64-pbc-bn382.sh x64-pbc-bn446.sh x64-pbc-fm16-765.sh x64-pbc-fm18-768.sh x64-pbc-kss16-330.sh x64-pbc-kss16-766.sh x64-pbc-kss18-354.sh x64-pbc-kss18-638.sh"
+            # minimal list:
+            #   PRESET_LIST="x64-pbc-bn382.sh x64-pbc-bls12-381.sh x64-pbc-bls24-509.sh x64-pbc-bls48-575.sh"
+        fi
     else
         echo
-        echo "Error: '${ARCH}' is not supported!"
-        echo "       Edit ${source_dir}/preset/*.sh and this script."
+        echo "Error: '${ARCH}' is not supported!" >&2
+        echo "       Edit ${source_dir}/preset/*.sh and this script." >&2
         echo
         exit 2
     fi
     for i in ${PRESET_LIST}; do
         log="${PAIRING_DIR}/relic${tag}_${i%.sh}_${TIME_OR_TSC}.log"
         RELIC_TARGET_DIR=relic-target-"${i%.sh}-${relic_timer}"
-        # ./preset/x64-pbc-bn254.sh "-B ./relic-target-x64-pbc-bn254"
-        # (cd relic-target-x64-pbc-bn254 && make && ./bin/"${bench}")
         if [ -d "./${RELIC_TARGET_DIR}" ]; then
             echo
             echo "Notice: './${RELIC_TARGET_DIR}' already exists."
             echo "  Move or remove it to renew it."
         else
-            # cf. CMakeLists.txt
-            #   WITH=PP only does not work
+            # For options of cmake and ./preset/*.sh, cf. CMakeLists.txt
             #   TIMER=HREAL   GNU/Linux realtime high-resolution timer.
-            ./preset/"$i" "-DTIMER=${relic_timer} -B ./${RELIC_TARGET_DIR}"
+            #   OPSYS=LINUX
+            #   OPSYS=MACOSX
+            #   'WITH=PP' only does not work
+            build_option_arr=(-DOPSYS="${relic_opsys}" -DBENCH="${num_of_bench}" -DTIMER="${relic_timer}" -B "./${RELIC_TARGET_DIR}")
+            if [ "$i" == "cmake_default" ]; then
+                # NOTE: cmake accepts separated arguments
+                # cmake -DBENCH="${num_of_bench}" -DTIMER="${relic_timer}" -B "./${RELIC_TARGET_DIR}"
+                cmake "${build_option_arr[@]}"
+            else
+                # NOTE: $1 in ./preset/"$i" accepts only one argument
+                # ./preset/"$i" "-DOPSYS=${relic_opsys} -DBENCH=${num_of_bench} -DTIMER=${relic_timer} -B ./${RELIC_TARGET_DIR}"
+                ./preset/"$i" "${build_option_arr[*]}"
+            fi
         fi
         cd "${RELIC_TARGET_DIR}"
         if [ -x "./bin/${bench}" ]; then
@@ -230,6 +276,7 @@ amend_miracle_benchtest () {
     # comment out non-pairing and below-128-bit security algorithms,
     #   such as bn254, ed25519, nist256,
     #   goldilocks (Ed448-Goldilocks), and rsa2048
+    # sed's s commands are compatible between Linux (GNU) and macOS (BSD)
     sed -e 's/bn254(&/\/\/ bn254(&/' \
         -e 's/ed25519(&/\/\/ ed25519(&/' \
         -e 's/nist256(&/\/\/ nist256(&/' \
@@ -258,11 +305,12 @@ amend_miracle_benchtest () {
         # - insert rdtscp function
         # - append rdtscp start
         # - read rdtscp end
-        sed -i \
-            -e '/using namespace core;/i #include "..\/..\/..\/..\/..\/utils\/rdtscp_func.cpp"' \
+        # gsed for macOS due to incompatible behavior with sed
+        ${SED} -i \
+            -e '/using namespace core;/i #include "..\/..\/..\/..\/..\/utils\/rdtscp\/rdtscp_func.cpp"' \
             -e '/iterations = 0;/i \\tdo {' \
             -e '/start = clock();/a \\tstart_tsc = rdtscp(&start_proc_id);' \
-            -e '/} while (elapsed/r ../../../../../utils/rdtscp_miracle_end.cpp' \
+            -e '/} while (elapsed/r ../../../../../utils/rdtscp/rdtscp_miracle_end.cpp' \
             "$2"
     fi
 }
@@ -380,7 +428,7 @@ measure_miracle () {
         case "${ARCH}" in
             aarch64|x86_64) arch_bits=64;;
             armv7l|x86)     arch_bits=32;;
-            *)              echo "Error: specify 'arch_bits'!"; exit 1;;
+            *)              echo "Error: specify 'arch_bits'!" >&2; exit 1;;
         esac
         python3 config"${arch_bits}".py test
         # python3 config"${arch_bits}".py
@@ -471,8 +519,7 @@ measure_mcl () {
         local ratio_2_1=1000     # Kclk/clk
         local ratio_3_1=1000000  # Mclk/clk
     else
-        echo "Error: unknown TIME_OR_TSC: '${TIME_OR_TSC}'!"
-        exit 2
+        echo "Error: unknown TIME_OR_TSC: '${TIME_OR_TSC}'!" >&2; exit 2
     fi
     (
     cd Mcl || exit 1
@@ -493,11 +540,12 @@ measure_mcl () {
         make clean
         if [ "${TIME_OR_TSC}" == "time" ]; then
             rm -f "${makefile}"
-            cp -fp Makefile "${makefile}"
-            if ! grep -q "CFLAGS+=-DCYBOZU_BENCH_USE_GETTIMEOFDAY" "${makefile}"; then
-                # add "CFLAGS+=-DCYBOZU_BENCH_USE_GETTIMEOFDAY" in ./Makefile
+            if ! grep -q "CFLAGS+=-DCYBOZU_BENCH_USE_GETTIMEOFDAY" Makefile; then
+                # add "CFLAGS+=-DCYBOZU_BENCH_USE_GETTIMEOFDAY" in ./Makefile as "${makefile}"
                 # "-i inplace -v INPLACE_SUFFIX" is available with gawk 4.1.0 or newer
-                awk -i inplace -v INPLACE_SUFFIX=.org 'BEGIN {cou=0;} {if (cou == 0 && $1 ~ /^CFLAGS/ ) {cou += 1; print "CFLAGS+=-DCYBOZU_BENCH_USE_GETTIMEOFDAY"; print;} else {print;}}' "${makefile}"
+                awk -v INPLACE_SUFFIX=.org 'BEGIN {cou=0;} {if (cou == 0 && $1 ~ /^CFLAGS/ ) {cou += 1; print "CFLAGS+=-DCYBOZU_BENCH_USE_GETTIMEOFDAY"; print;} else {print;}}' Makefile > "${makefile}"
+            else
+                cp -fp Makefile "${makefile}"
             fi
             # NOTE: alternative is to comment out the following defs
             #       in include/cybozu/benchmark.hpp
@@ -605,6 +653,7 @@ measure_blst () {
         #   This bench is for higher-level processes,
         #   such as signing and verification.
         cargo bench
+        echo "BLST_DAT=${BLST_DAT}"
         exit
     fi
 }
@@ -629,12 +678,15 @@ fi
 case "${TIME_OR_TSC}" in
     "tsc")  SPEED_UNIT="cycles";;
     "time") SPEED_UNIT="msec";;
-    *) echo "Error: unknown TIME_OR_TSC: '${TIME_OR_TSC}'!"; exit 1
+    *) echo "Error: unknown TIME_OR_TSC: '${TIME_OR_TSC}'!" >&2; exit 1
 esac
 
 # body
-mkdir -p "${PAIRING_DIR}/"
-cd "${PAIRING_DIR}/" || exit 1
+mkdir -p "${TMP_PAIRING_DIR}/"
+# NOTE:
+#   `readlink` requies the dir so it shall come in between mkdir and cd
+PAIRING_DIR="$(readlink -f "${TMP_PAIRING_DIR}")"  # absolute path
+cd "${TMP_PAIRING_DIR}/" || exit 1
 
 # TMP_NAME and PAIRING_DAT are modified in measure_*() and below
 TMP_NAME_128=pairing_128bs
@@ -666,7 +718,7 @@ else
                 ../../plot_openssl_speed.sh -l pairing -u "${SPEED_UNIT}" -d ./"${RELIC_DAT#"${PWD}"/}";;
             miracle) measure_miracle "${tag}";
                 ../../plot_openssl_speed.sh -l pairing -u "${SPEED_UNIT}" -d "${MIRACLE_DAT#"${PWD}"/}";;
-            *) echo "Error: unknown <REPO>: '${repo}'!"; exit 1;;
+            *) echo "Error: unknown <REPO>: '${repo}'!" >&2; exit 1;;
         esac
         shift
     done

@@ -77,7 +77,6 @@ MCL 3.04:
         > * `make` と `gcc` は各リポジトリでのビルドで必要
         > * `python` は Miracle のビルドで必要
 
-<!--
     * macOS の場合:
         1. Command Line Tools のインストール
 
@@ -90,12 +89,11 @@ MCL 3.04:
         1. [Homebrew](https://brew.sh/)をインストールし、以下を実行
 
             ```zsh
-            brew install gnuplot coreutils python
+            brew install gnuplot coreutils python gsed
             ```
 
             > * `coreutils` は `realpath` コマンドをインストールするために必要
             > * `python` は Miracle のビルドで必要
--->
 
 1. 本スクリプトのダウンロードとフォルダへの移動
 

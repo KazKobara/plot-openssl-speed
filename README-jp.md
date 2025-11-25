@@ -2,10 +2,14 @@
 
 [English <img src="https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/gb.svg" width="20" alt="English" title="English"/>](./README.md)
 
+## 主な履歴
+
 * v1.3 で双線形写像(ペアリング)の処理速度を計測し、結果をグラフ描画するスクリプト [pairing_bench.sh](./pairing_bench.sh) を追加しました([使い方](./README-pairing-bench-jp.md))。
 * v1.2 以降でFIPSプロバイダーの計測結果のグラフ描画を可能にしました。
   * FIPS validated バージョンなどの情報は[こちら](https://openssl-library.org/source/)。
 * v1 以降で耐量子計算機暗号の計測結果のグラフ描画を可能にしました。
+
+## 概要
 
 本プログラム/スクリプトは、OpenSSL及びその互換プログラム/ライブラリ(LibreSSLなど)の使用者/開発者が、そこで利用可能な暗号アルゴリズムの処理速度を手元の環境で計測し結果を比較表示したり、Web上で公開されている処理速度やサイズ情報などと比較する作業を容易にするためのものです。
 暗号アルゴリズムを128/192/256ビットセキュリティへ移行する際や耐量子計算機暗号へ移行する際の判断材料を得ることができます。

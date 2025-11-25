@@ -45,7 +45,7 @@ if [ -s "${COMMON_SCRIPT}" ]; then
     # shellcheck source=./utils/common.sh
     . "${COMMON_SCRIPT}"
 else
-    echo "Error: failed to source ${COMMON_SCRIPT}!"
+    echo "Error: failed to source ${COMMON_SCRIPT}!" >&2
     exit 3
 fi
 
@@ -892,7 +892,7 @@ set_openssl_tagged () {
                 fi
                 ;;
             *)
-                echo "Error: unknown project_name: '${project_name}'";
+                echo "Error: unknown project_name: '${project_name}'!" >&2;
                 exit 1;;
         esac
         # ${GIT_CLONE} "${git_url}" -b "${tag}" --depth 1 "${openssl_type}"
@@ -1033,7 +1033,7 @@ if [ -n "${s_arg}" ]; then
         ARR_SPEED_OPT=(-s "${s_arg}")
     else
         echo
-        echo "Error: invalid '${s_arg}' for the '-s' option!"
+        echo "Error: invalid '${s_arg}' for the '-s' option!" >&2
         echo "       Use '-h' option for help!";
         echo
         exit 2
@@ -1046,7 +1046,7 @@ if [ "${RUN_MODE}" != "build_only" ] && \
         [ "${RUN_MODE}" != "skip_symmetric" ] && \
         [ "${RUN_MODE}" != "skip_asymmetric" ]; then
     echo
-    echo "Error: unknown run_mode '${RUN_MODE}' for the '-r' option!"
+    echo "Error: unknown run_mode '${RUN_MODE}' for the '-r' option!" >&2
     echo "  'run_mode' is one of 'build_only', 'full',"
     echo "  'skip_symmetric', or 'skip_asymmetric'."
     echo
@@ -1085,7 +1085,7 @@ cd "${TMP_DIR}/" || exit 2
                     # if [[ "${openssl_type,,}" == *"oqsprovider"* ]] || [[ "${openssl_type,,}" == *"libressl"* ]]; then
                     if [[ "${openssl_type}" == *"oqsprovider"* ]] || [[ "${openssl_type}" == *"libressl"* ]]; then
                         echo
-                        echo "Error: remove '${openssl_type: 0: ${#TAG_FIPS}}' from '${openssl_type}'!"
+                        echo "Error: remove '${openssl_type: 0: ${#TAG_FIPS}}' from '${openssl_type}'!" >&2
                         echo "  'enable-fips' is not either tested or supported."
                         echo
                         exit 2
@@ -1097,7 +1097,7 @@ cd "${TMP_DIR}/" || exit 2
                     # if [[ "${openssl_type,,}" == *"${TAG_MINGW,,}" ]]; then
                     if [[ "${openssl_type}" == *"${TAG_MINGW}" ]]; then
                         echo
-                        echo "Error: remove '${openssl_type: -${#TAG_MINGW}}' from '${openssl_type}'!"
+                        echo "Error: remove '${openssl_type: -${#TAG_MINGW}}' from '${openssl_type}'!" >&2
                         echo "  'oqsprovider' for MinGW is not tested or supported."
                         echo
                         exit 2

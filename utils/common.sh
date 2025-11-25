@@ -9,7 +9,7 @@ set -e
 
 ### Params ###
 # shellcheck disable=SC2034  # used in plot_openssl*.sh
-VER=1.3
+VER=1.3.1
 GRA_DIR="graphs"
 UNAME_S="$(uname -s)"
 
@@ -32,20 +32,21 @@ fi
 check_path (){
     local real_path touched
     # TODO: test realpath and then determine if it requires the given path and file.
-    # NOTE: some `realpath` command fails with "No such file or directory" for non-existant 
+    # NOTE:
+    #   If $2 does not exist,
+    #   some `realpath` command fails with "No such file or directory"
     if [ ! -e "$2" ] && [ "${UNAME_S}" == "Darwin" ] ; then
         touch "$2"
         touched=1
     fi
     real_path=$(realpath "$2")
-    # NOTE: some `realpath` command fails with "No such file or directory" for non-existant 
     [ "${touched}" == "1" ] && rm -f "$2"
     if [[ ${real_path} != $1* ]]; then
         echo
-        echo "Error: '$2' is not under the allowed dir!"
+        echo "Error: '$2' is not under the allowed dir!" >&2
         echo
         exit 2
-    fi     
+    fi
 }
 
 

@@ -75,7 +75,6 @@ Cf. the figure of 128-bit security below.
         > * `make` and `gcc` are to make binaries in each repository.
         > * `python` is to configure test in Miracle.
 
-<!--
     * On macOS:
       1. Install Command Line Tools
 
@@ -88,12 +87,11 @@ Cf. the figure of 128-bit security below.
       1. Install [Homebrew](https://brew.sh/), then
 
           ```zsh
-          brew install gnuplot coreutils python
+          brew install gnuplot coreutils python gsed
           ```
 
           > * `coreutils` is needed to use `realpath` command.
           > * `python` is to configure test in Miracle Core.
--->
 
 1. Download and enter this repository:
 
@@ -152,7 +150,7 @@ Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz (1.61GHz)
 ```console
 $ uname -srm
 
-Darwin 21.5.0 x86_64
+Darwin 24.6.0 x86_64
 ```
 
 ```console

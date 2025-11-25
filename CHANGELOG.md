@@ -4,13 +4,30 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.3.1] -->
+<!-- ## [Unreleased 1.3.2] -->
+
+## [1.3.1]
+
+### Added
+
+- `num_of_bench` to reduce the measuring time of Relic.
+- `>&2` for error messages.
+
+### Changed
+
+- [pairing_bench.sh](./pairing_bench.sh).
+  - Supported macOS (x86_64) partially by introducing `cmake_default` for Relic 0.7.0.
+  - Enabled relative-to-absolute-path transformation by moving the process after making the relative dir.
+
+### Fixed
+
+- The path for rdtscp for Miracle.
 
 ## [1.3.0]
 
 ### Added
 
-- [plot_pairing_bench.sh](./plot_pairing_bench.sh)
+- [pairing_bench.sh](./pairing_bench.sh)
   - and `-l pairing [-u SPEED_UNIT]` option in [plot_openssl_speed.sh](./plot_openssl_speed.sh) to work with it.
 - `-v` option to show the version.
 
