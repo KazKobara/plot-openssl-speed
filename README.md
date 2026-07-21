@@ -705,8 +705,7 @@ compiler: gcc -fPIC -pthread -m64 -Wa,--noexecstack -Wall -Wa,--noexecstack -g -
 Version and configurations of openssl-3.0.5:
 
 ```console
-$ (export LD_LIBRARY_PATH=./tmp/openssl-3.0.5${LD_LIBRARY_PATH:+:$LD_LIBRARY
-_PATH}; ./tmp/openssl-3.0.5/apps/openssl version -a )
+$ (export LD_LIBRARY_PATH=./tmp/openssl-3.0.5${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}; ./tmp/openssl-3.0.5/apps/openssl version -a )
 
 OpenSSL 3.0.5 5 Jul 2022 (Library: OpenSSL 3.0.5 5 Jul 2022)
 built on: Wed Jul 13 10:43:30 2022 UTC
