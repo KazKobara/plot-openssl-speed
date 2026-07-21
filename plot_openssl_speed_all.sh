@@ -736,9 +736,9 @@ set_with_oqsprovider () {
                     else
                         V_FOR_PATCH=""
                     fi
+                    # apply patch but avoid exit by set -e
+                    sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& { ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider${V_FOR_PATCH}.patch \|\| true \;} \&\& LDFLAGS/" scripts/fullbuild.sh
                 fi
-                # apply patch but avoid exit by set -e
-                sed -i "s/\&\& cd openssl \&\& LDFLAGS/\&\& cd openssl \&\& { ${GIT} apply ..\/..\/..\/utils\/speed_pqcsigs_in_default_provider${V_FOR_PATCH}.patch \|\| true \;} \&\& LDFLAGS/" scripts/fullbuild.sh
             fi
             # can comment out the next sed command if git protocol is allowed in your network
             sed -i".org" 's/git:\/\/git.openssl.org/https:\/\/github.com\/openssl/' scripts/fullbuild.sh
