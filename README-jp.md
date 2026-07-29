@@ -7,6 +7,7 @@
 * v1.3 で双線形写像(ペアリング)の処理速度を計測し、結果をグラフ描画するスクリプト [pairing_bench.sh](./pairing_bench.sh) を追加しました([使い方](./README-pairing-bench-jp.md))。
 * v1.2 以降でFIPSプロバイダーの計測結果のグラフ描画を可能にしました。
   * FIPS validated バージョンなどの情報は[こちら](https://openssl-library.org/source/)。
+  * v1.4 以降でFIPS(+Base)プロバイダーとOQS(+Default)プロバイダーの組み合わせを処理できるようにしました。
 * v1 以降で耐量子計算機暗号の計測結果のグラフ描画を可能にしました。
 
 ## 概要
@@ -42,7 +43,7 @@
       1. [Homebrew](https://brew.sh/)をインストールし、以下を実行
 
           ```zsh
-          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf automake perl
+          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf automake perl gawk gnu-sed
           ```
 
           > * `coreutils` は `realpath` コマンドをインストールするために必要
@@ -83,10 +84,15 @@
 
     ```bash
     cd ./data_from_web/
-    npm install --save puppeteer
+    npm install puppeteer
     npx @puppeteer/browsers install chrome@stable
     cd ..
     ```
+    <!--
+    # alternative of `npm install puppeteer`
+    npm install puppeteer@latest
+    # add '--save' for npm v4 or older
+    -->
 
     その後、以下のスクリプトを実行
 

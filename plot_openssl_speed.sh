@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2026 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 set -e
 # set -x
 
@@ -65,6 +65,8 @@ usage () {
     echo "         Specify either 'msec' or 'cycles' with '-l pairing' option."
     echo "     [-h]"
     echo "         Show this usage."
+    echo "     [-v]"
+    echo "         Show version."
     echo
     echo "   where:"
     echo "     'crypt-algorithms' can be found in the area" 
@@ -329,9 +331,12 @@ measure () {
             #        rsa3072 0.248000s 0.002469s 0.000054s       4.0     405.0   18644.0
             #
             local rsa_num_field rsa_num_field_enc rsa_num_field_sig
-            rsa_num_field=$(awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP { print NF}' "${LOG}" | uniq)
-            rsa_num_field_enc=$(awk '{if (($1=="keygen")&&($2=="encaps")&&($3=="decaps")) { print NF }}' "${LOG}" | uniq)
-            rsa_num_field_sig=$(awk '{if (($1=="keygen")&&($2=="signs")&&($3=="verify")) { print NF }}' "${LOG}" | uniq)
+            # shellcheck disable=SC2016  # awk's variables
+            {
+                rsa_num_field=$("${GNU_PREF}"awk -v REGEXP="^${ALGO3}[1-9][0-9]+bit" '$1$2$3 ~ REGEXP { print NF}' "${LOG}" | uniq)
+                rsa_num_field_enc=$("${GNU_PREF}"awk '{if (($1=="keygen")&&($2=="encaps")&&($3=="decaps")) { print NF }}' "${LOG}" | uniq)
+                rsa_num_field_sig=$("${GNU_PREF}"awk '{if (($1=="keygen")&&($2=="signs")&&($3=="verify")) { print NF }}' "${LOG}" | uniq)
+            }
             # echo "rsa_num_field = $rsa_num_field"
             if { [ "${rsa_num_field}" == "" ] || [ "${rsa_num_field}" == "0" ];} && \
                     { [ "${rsa_num_field_enc}" == "" ] || [ "${rsa_num_field_enc}" == "0" ];} && \
@@ -499,7 +504,8 @@ table_type () {
     NUM_FIELD="${NUM_FIELD% }"  # remove the last space
     local GUESSED_TABLE_TYPE
     local NUM_FIELD_VARIATION
-    NUM_FIELD_VARIATION=$(echo "${NUM_FIELD}" | wc -l | awk '{print $1}' )
+    # shellcheck disable=SC2016  # awk's variables
+    NUM_FIELD_VARIATION=$(echo "${NUM_FIELD}" | wc -l | "${GNU_PREF}"awk '{print $1}' )
     # example of a table of "NUM_FIELD_VARIATION == 3"
     # enc/s keygen/s dh/s
     #  xxx      0
@@ -548,7 +554,7 @@ set_gra_title () {
         if [ "${PLOT_DATA_FILE}" == "1" ]; then
             GRA_TITLE_APPENDIX=""
         else
-            # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+            # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | "${GNU_PREF}"awk '{print $1 $2}')"
             openssl_ver_nospace_from_command
             GRA_TITLE_APPENDIX="with ${OPENSSL_VER_NOSPACE}"
             if [ "${INC_OQS_ALGO}" == "yes" ]; then
@@ -623,7 +629,8 @@ plot_data () {
             local tmp
             # guess SPEED_UNIT (for -l pairing)
             # from the first comment line in ${DAT}
-            tmp="$(awk '/^#/ {print $2; exit} ' "${DAT}")"
+            # shellcheck disable=SC2016  # awk's variables
+            tmp="$("${GNU_PREF}"awk '/^#/ {print $2; exit} ' "${DAT}")"
             if [ "${tmp}" == "msec" ] || [ "${tmp}" == "cycles" ]; then
                 SPEED_UNIT="${tmp}"
             else
@@ -636,7 +643,8 @@ plot_data () {
                 \"./${DAT}\" using ${GRA_CLM}3:xtic(1) with ${GRA_TYPE} title 'verify/s', \
                 \"./${DAT}\" using ${GRA_CLM}2:xtic(1) with ${GRA_TYPE} title 'sign/s', \
                 "
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $4}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $4}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}4:xtic(1) with ${GRA_TYPE} title 'keygen/s', \
@@ -645,25 +653,29 @@ plot_data () {
         elif [ "${TABLE_TYPE}" == "dec_enc_keygen_dh" ]; then
             # The order '(verify or enc)/s' to '(sign or dec)/s' is for the compatibility to v0.0.0.
             unset GRA_PLOT
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $3}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $3}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}3:xtic(1) with ${GRA_TYPE} title 'enc/s', \
                 "
             fi
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $2}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $2}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}2:xtic(1) with ${GRA_TYPE} title 'dec/s', \
                 "
             fi
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $4}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $4}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}4:xtic(1) with ${GRA_TYPE} title 'keygen/s', \
                 "
             fi
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $5}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $5}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}5:xtic(1) with ${GRA_TYPE} title 'dh/s', \
@@ -675,13 +687,15 @@ plot_data () {
                 \"./${DAT}\" using ${GRA_CLM}3:xtic(1) with ${GRA_TYPE} title '(verify or enc)/s', \
                 \"./${DAT}\" using ${GRA_CLM}2:xtic(1) with ${GRA_TYPE} title '(sign or dec)/s', \
                 "
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $4}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $4}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}4:xtic(1) with ${GRA_TYPE} title 'keygen/s', \
                 "
             fi
-            COLUMN_VAL="$(awk '(! /^[ \t]*#/) {print $5}' "${DAT}" | uniq | tr -d '\r\n')"
+            # shellcheck disable=SC2016  # awk's variables
+            COLUMN_VAL="$("${GNU_PREF}"awk '(! /^[ \t]*#/) {print $5}' "${DAT}" | uniq | tr -d '\r\n')"
             if ! [[ -z "${COLUMN_VAL}" || "${COLUMN_VAL}" == "0" ]]; then
                 GRA_PLOT="${GRA_PLOT} \
                 \"./${DAT}\" using ${GRA_CLM}5:xtic(1) with ${GRA_TYPE} title 'dh/s', \
@@ -740,8 +754,9 @@ plot_data () {
 
     # Set graph params depending on # of records.
     declare -i NUM_OF_RECORDS
-    # num="$(awk '(! /^[ \t]*#/) && (NF > 1) {n+=1} END{print n}' "${DAT}" | uniq)"
-    NUM_OF_RECORDS="$(awk '(! /^[ \t]*#/) && (NF > 1) {n+=1} END{print n}' "${DAT}")"
+    # num="$("${GNU_PREF}"awk '(! /^[ \t]*#/) && (NF > 1) {n+=1} END{print n}' "${DAT}" | uniq)"
+    # shellcheck disable=SC2016  # awk's variables
+    NUM_OF_RECORDS="$("${GNU_PREF}"awk '(! /^[ \t]*#/) && (NF > 1) {n+=1} END{print n}' "${DAT}")"
     GRA_KEY_POS="center"  # default
     echo "# of records: ${NUM_OF_RECORDS}"
     if [ "${NUM_OF_RECORDS}" -ge 14 ]; then
@@ -891,7 +906,8 @@ optcheck_measure_plot () {
         fi
         # to avoid suspicious input
         # TODO: accept more flex patterns for util/wrap.pl
-        if [ "${OPENSSL: 0: 28}" != "./util/wrap.pl -fips ./apps/" ]; then
+        if [ "${OPENSSL: 0: 28}" != "./util/wrap.pl -fips ./apps/" ] &&
+           [ "${OPENSSL: 0: 51}" != "./openssl/util/wrap.pl -fips ./openssl/apps/openssl" ]; then
             if [ "${OPENSSL}" != openssl ] && [ "${OPENSSL}" != openssl.exe ] && [ ! -s "${OPENSSL}" ]; then
                 echo
                 echo "Error: '${OPENSSL}' given by -p option does not exist!" >&2
@@ -999,8 +1015,8 @@ fi
 # On macOS:
 #   $ wc -l  ./graph.dat
 #   "    0 ./graph.dat"
-# NUM_FIELD=$(awk '(! /^[ \t]*#/) && (NF > 1) {print NF}' "${DAT}" | sort -u | tr '\r\n' ' ' | sed -E 's/[ ]+/ /g' )
-NUM_FIELD="$(awk '(! /^[ \t]*#/) && (NF > 1) {print NF}' "${DAT}" | sort -u | tr '\r\n' '  ' | tr -s ' ' )"
+# shellcheck disable=SC2016  # awk's variables
+NUM_FIELD="$("${GNU_PREF}"awk '(! /^[ \t]*#/) && (NF > 1) {print NF}' "${DAT}" | sort -u | tr '\r\n' '  ' | tr -s ' ' )"
 if [ -z "${NUM_FIELD}" ]; then
     echo
     echo "Warning: '${DAT}' has no data. Skipped!"

@@ -4,7 +4,22 @@ All notable changes, such as backward incompatibilities, will be documented in t
 
 <!-- markdownlint-disable MD024 no-duplicate-heading -->
 
-<!-- ## [Unreleased 1.3.2] -->
+<!-- ## [Unreleased 1.4.1] -->
+
+## [1.4]
+
+### Added
+
+- Enabled combinations of providers between FIPS (with Base) and OQS (with Default) by `openssl_type` of the form of `fips-openssl-*-oqsprovider*`.
+- `-j` option to `make`.
+- `-d` option to `plot_openssl_speed_all.sh` for enabling debug and trace openssl command.
+
+### Fixed
+
+- The position of `with_webdata.sh` in `plot_openssl_speed_all.sh` to remove the following notices.
+  - "Notice: './pqc_sig_sel.dat' does not exist. Skipped!"
+  - "Notice: './pqc_kem_sel.dat' does not exist. Skipped!"
+- Incompatibility of awk and sed between linux and macos by using gawk and gsed on macos.
 
 ## [1.3.1]
 

@@ -2,27 +2,38 @@
 # Common utilities for plot_openssl*.sh .
 #
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2026 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 
 set -e
 # set -x
 
 ### Params ###
 # shellcheck disable=SC2034  # used in plot_openssl*.sh
-VER=1.3.1
+VER=1.4
 GRA_DIR="graphs"
 UNAME_S="$(uname -s)"
 
 if [ "${UNAME_S}" == "Darwin" ] ; then
     SO=dylib
     # shellcheck disable=SC2034  # used in other scripts
-    DOT_LOCAL_LIB=lib
+    {
+        DOT_LOCAL_LIB=lib
+        NUM_PROC="$(sysctl -n hw.logicalcpu)"
+    }
+    # the following expand_aliases does not work in subprocesses
+    shopt -s expand_aliases
+    alias sed='gsed'
+    alias awk='gawk'
+    # for subprocesses
+    GNU_PREF='g'
 else
     SO=so
     # shellcheck disable=SC2034  # used in other scripts
-    DOT_LOCAL_LIB=lib64
+    {
+        DOT_LOCAL_LIB=lib64
+        NUM_PROC="$(nproc)"
+    }
 fi
-
 
 ##
 # @brief        Path check
@@ -64,9 +75,10 @@ get_arr_oqs () {
         # classic ones whose names include '_' except
         # X25519MLKEM768 and SecP256r1MLKEM768 for at least
         # openssl-3.4.0-oqsprovider0.7.0-liboqs0.11.0.
-        # IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | awk '$1 ~ /(X25519|X448|Sec)/{ next } /^[^_]+ @ oqsprovider$/ {print $1}' | sort -V | awk '{printf "%s ",$1}')"
+        # IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | "${GNU_PREF}"awk '$1 ~ /(X25519|X448|Sec)/{ next } /^[^_]+ @ oqsprovider$/ {print $1}' | sort -V | awk '{printf "%s ",$1}')"
         # To support the name of OV (and UOV) that includes '_', such as 'OV_I*'
-        IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | awk '$1 ~ /(X25519|X448|Sec)/{ next } /^([^_]+|[ ]*OV_I.*) @ oqsprovider$/ {print $1}' | sort -V | awk '{printf "%s ",$1}')"
+        # shellcheck disable=SC2016  # awk's variables
+        IFS=" " read -r -a arr_tmp <<< "$(${OPENSSL} list -"${algorithm_type}"-algorithms -provider oqsprovider 2>/dev/null | "${GNU_PREF}"awk '$1 ~ /(X25519|X448|Sec)/{ next } /^([^_]+|[ ]*OV_I.*) @ oqsprovider$/ {print $1}' | sort -V | awk '{printf "%s ",$1}')"
         # shellcheck disable=SC2034  # used in other scripts
         case "${algorithm_type}" in
             "signature") ARR_OQS_SIG=("${arr_tmp[@]}");;
@@ -91,10 +103,10 @@ liboqs_ver_from_command () {
     local tmp
     OPENSSL_VER_ALL="$(${OPENSSL} version -a)"
     # OPENSSL_VER="$(${OPENSSL} version)"
-    # OPENSSL_VER="$(echo "${OPENSSL_VER_ALL}" | awk 'NR==1 {print $1 $2}')"
+    # OPENSSL_VER="$(echo "${OPENSSL_VER_ALL}" | "${GNU_PREF}"awk 'NR==1 {print $1 $2}')"
     # "OpenSSL 3.3.1", "LibreSSL 2.8.3" and so on
-    # openssl_ver_nospace="$(echo "${OPENSSL_VER}" | awk '{printf "%s%s", $1,$2}')"
-    # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER_ALL}" | awk 'NR==1 {printf "%s%s", $1,$2}')"
+    # openssl_ver_nospace="$(echo "${OPENSSL_VER}" | "${GNU_PREF}"awk '{printf "%s%s", $1,$2}')"
+    # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER_ALL}" | "${GNU_PREF}"awk 'NR==1 {printf "%s%s", $1,$2}')"
     # "OpenSSL3.3.1", "LibreSSL2.8.3" and so on
     unset LIBOQS_VER OPENSSL_PROVIDER
     if [[ "${OPENSSL_VER_ALL}" == *"MODULESDIR"* ]]; then
@@ -103,11 +115,13 @@ liboqs_ver_from_command () {
             # TODO: find a more simple way to identify real LIBOQS_VER
             #       whereas plot_openssl_in_path() cannot use LIBOQS_BRANCH
             if [ -n "${OPENSSL_MODULES}" ]; then
-                tmp="$(strings "${OPENSSL_MODULES}/oqsprovider.$SO" | awk '/based on liboqs/')"
+                # shellcheck disable=SC2016  # awk's variables
+                tmp="$(strings "${OPENSSL_MODULES}/oqsprovider.$SO" | "${GNU_PREF}"awk '/based on liboqs/')"
             else
                 # use MODULESDIR in ${OPENSSL_VER_ALL}
-                # tmp="$(strings "$(echo "${OPENSSL_VER_ALL}" | awk '/MODULESDIR:/ {printf "%s",$2}' | sed -e 's/"//g')/oqsprovider.$SO" | awk '/based on liboqs/')"
-                tmp="$(strings "$(echo "${OPENSSL_VER_ALL}" | awk '/MODULESDIR:/ {printf "%s",substr($2,2,length($2)-2)}')/oqsprovider.$SO" | awk '/based on liboqs/')"
+                # tmp="$(strings "$(echo "${OPENSSL_VER_ALL}" | "${GNU_PREF}"awk '/MODULESDIR:/ {printf "%s",$2}' | "${GNU_PREF}"sed -e 's/"//g')/oqsprovider.$SO" | "${GNU_PREF}"awk '/based on liboqs/')"
+                # shellcheck disable=SC2016  # awk's variables
+                tmp="$(strings "$(echo "${OPENSSL_VER_ALL}" | "${GNU_PREF}"awk '/MODULESDIR:/ {printf "%s",substr($2,2,length($2)-2)}')/oqsprovider.$SO" | "${GNU_PREF}"awk '/based on liboqs/')"
             fi
             # tmp="OQS Provider v.0.6.0 (0ec51ec) based on liboqs v.0.10.1"
             LIBOQS_VER=${tmp##*liboqs v.}
@@ -148,8 +162,9 @@ openssl_ver_nospace_from_command () {
 # COMMENT_EOF
     # NOTE:
     #   For MinGW, $1=="fips" does not work due to the carriage return code after it.
-    # tmp=$(${OPENSSL} list -providers | awk '$1=="fips" {getline; printf "%s",$2; getline; print $2}')
-    tmp=$(${OPENSSL} list -providers 2>/dev/null | awk '$1 ~ "fips" {getline; printf "%s",$2; getline; print $2}' | tr -d '\r\n')
+    # tmp=$(${OPENSSL} list -providers | "${GNU_PREF}"awk '$1=="fips" {getline; printf "%s",$2; getline; print $2}')
+    # shellcheck disable=SC2016  # awk's variables
+    tmp=$(${OPENSSL} list -providers 2>/dev/null | "${GNU_PREF}"awk '$1 ~ "fips" {getline; printf "%s",$2; getline; print $2}' | tr -d '\r\n')
     if [ -n "${tmp}" ]; then
         # fips provider
         OPENSSL_VER_NOSPACE="${tmp}FIPS"
@@ -158,7 +173,8 @@ openssl_ver_nospace_from_command () {
         if [ -z "${OPENSSL_VER}" ]; then
             OPENSSL_VER=$(${OPENSSL} version)
         fi
-        OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+        # shellcheck disable=SC2016  # awk's variables
+        OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | "${GNU_PREF}"awk '{print $1 $2}')"
     fi
     export OPENSSL_VER_NOSPACE
 }

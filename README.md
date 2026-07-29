@@ -5,6 +5,7 @@
 * v1.3 added [pairing_bench.sh](./pairing_bench.sh) to measure and depict the processing speed of the bilinear map, or pairing, ([README](./README-pairing-bench.md)).
 * v1.2 and newer support FIPS providers.
   * A list of FIPS-validated versions and their corresponding information can be found [in the middle of this link](https://openssl-library.org/source/).
+  * v1.4 and newer support combinations of providers between FIPS (with Base) and OQS (with Default).
 * v1 and newer support post-quantum cryptographies.
 
 ## Preparation
@@ -33,7 +34,7 @@
       1. Install [Homebrew](https://brew.sh/), then
 
           ```zsh
-          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf automake perl
+          brew install gnuplot coreutils mingw-w64 cmake ninja autoconf automake perl gawk gnu-sed
           ```
 
           > * `coreutils` is needed to use `realpath` command.
@@ -69,7 +70,7 @@
 
     ```bash
     cd ./data_from_web/
-    npm install --save puppeteer
+    npm install puppeteer
     npx @puppeteer/browsers install chrome@stable
     cd ..
     ```

@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 #
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2026 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 set -e
 # set -x
 
 ### Params ###
-VER=1.2.1
+VER=1.4
 COMMAND=$(basename "$0")
 COMMAND_TMP="${COMMAND%.sh}.tmp"
 rm -f "${COMMAND_TMP}"
 GNUPLOT_VER=$(gnuplot -V)
+if [ "${UNAME_S}" == "Darwin" ] ; then
+    # the following expand_aliases does not work in subprocesses
+    shopt -s expand_aliases
+    alias awk='gawk'
+    # for subprocesses
+    GNU_PREF='g'
+fi
 
 ##### functions #####
 ### for cycles and size
@@ -22,7 +29,6 @@ usage () {
     echo "   Collect and plot (collect-plot mode):"
     echo
     echo "     \$ ./${COMMAND}"
-    echo
     echo "   Plot given data (data-plot mode):"
     echo
     echo "     \$ ./${COMMAND} -d data_file_to_graph [-o filename.png]"
@@ -281,10 +287,10 @@ candlesticks_from_web () {
 get_cpu_mhz () {
     # NOTE: alternative
     # for linux
-    # MHZ="$(awk '$1$2 == "cpuMHz" {print $4; exit}' /proc/cpuinfo)"
+    # MHZ="$("${GNU_PREF}"awk '$1$2 == "cpuMHz" {print $4; exit}' /proc/cpuinfo)"
     # for mac
-    # MHZ="$(sudo powermetrics | awk '$0 ~ "CPU Average frequency as fraction of nominal" {sub(/\(/,_,$9); print $9; exit})"
-    # MHZ="$(sudo powermetrics | awk '$0 ~ "CPU Average frequency as fraction of nominal" {print substr($9,2); exit})"
+    # MHZ="$(sudo powermetrics | "${GNU_PREF}"awk '$0 ~ "CPU Average frequency as fraction of nominal" {sub(/\(/,_,$9); print $9; exit})"
+    # MHZ="$(sudo powermetrics | "${GNU_PREF}"awk '$0 ~ "CPU Average frequency as fraction of nominal" {print substr($9,2); exit})"
     local hz_line hz
     if [[ "$(uname -s)" == "Darwin"* ]]; then
         # machdep.cpu.brand_string: Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz
@@ -322,7 +328,8 @@ plot_as_candlesticks () {
         Y_MIN=0
         # tmp="$(wc -l "${COMP_DAT}")"
         # nr="${tmp%[ ]+$}"
-        nr="$(awk '$1 ~ /^[0-9]+$/' "${COMP_DAT}" | wc -l )"
+        # shellcheck disable=SC2016  # awk's variables
+        nr="$("${GNU_PREF}"awk '$1 ~ /^[0-9]+$/' "${COMP_DAT}" | wc -l )"
     else
         Y_LABEL="log${Y_LOG_BASIS}(Cycles)"
         log_comp_dat="log${Y_LOG_BASIS}_${COMP_DAT}"
@@ -346,7 +353,8 @@ plot_as_candlesticks () {
         GRA_FILE="${COMP_DAT%.dat}.png"
         # NOTE:
         #   "$1 ~ /[^#]/" counts blank lines.
-        y_min_and_nr="$(awk '
+        # shellcheck disable=SC2016  # awk's variables
+        y_min_and_nr="$("${GNU_PREF}"awk '
             BEGIN {cou=0};
             $1 ~ /^[0-9]+$/ { cou++;
                 if (cou==1)
@@ -1012,7 +1020,8 @@ get_webdata_plot_size () {
 plot_as_scatter () {
     local tmp xy_min_max_arr sig_or_kem="$1"
     # find xy_min_max_arr, min and max of x and y coordinates
-    tmp="$(awk '
+    # shellcheck disable=SC2016  # awk's variables
+    tmp="$("${GNU_PREF}"awk '
             BEGIN {cou=0};
             $1 ~ /[0-9]+/ {
                 if (cou==0)

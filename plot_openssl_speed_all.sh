@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Wrapper of ${PLOT_SCRIPT}
 # This file is part of https://github.com/KazKobara/plot_openssl_speed
-# Copyright (C) 2025 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
+# Copyright (C) 2026 National Institute of Advanced Industrial Science and Technology (AIST). All Rights Reserved.
 set -e
 # set -x
 
@@ -102,8 +102,10 @@ usage () {
     echo "                  LibreSSL at least 2.8.3 does not support this."
     echo "     [-r run_mode] 'run_mode' is one of 'build_only', 'full',"
     echo "                  'skip_symmetric', or 'skip_asymmetric'"
-    echo "                  (default: '${DEFAULT_RUN_MODE}')"
-    echo "     [-h]         Show this usage"
+    echo "                  (default: '${DEFAULT_RUN_MODE}')."
+    echo "     [-d]         Add 'enable-trace --debug' to OpenSSL config option."
+    echo "     [-h]         Show this usage."
+    echo "     [-v]         Show version."
     echo
 }
 
@@ -114,6 +116,10 @@ usage () {
 # @param[out]   global OPENSSL_INFO OPENSSL_BRANCH LIBOQS_BRANCH OQSPROVIDER_BRANCH
 openssl_type_to_oqs_branches () {
     local tmp
+    if [ -n "${ENABLE_FIPS}" ]; then
+        # remove ${TAG_FIPS} from ${openssl_type}
+        openssl_type="${openssl_type: ${#TAG_FIPS}}"
+    fi
     # openssl_type=openssl-3.4.0-alpha1-oqsprovider0.6.1-rc1-liboqs0.10.1-rc1
     OPENSSL_BRANCH=${openssl_type%%-oqsprovider*}
     # OPENSSL_BRANCH=openssl-3.4.0-alpha1
@@ -121,6 +127,7 @@ openssl_type_to_oqs_branches () {
     # tmp=0.6.1-rc1-liboqs0.10.1-rc1
     OQSPROVIDER_BRANCH=${tmp%%-liboqs*}
     # OQSPROVIDER_BRANCH=0.6.1-rc1
+    # shellcheck disable=SC2034  # LIBOQS_BRANCH is used in ". ./scripts/fullbuild.sh"
     LIBOQS_BRANCH=${tmp##*liboqs}
     # LIBOQS_BRANCH=0.10.1-rc1
     # LIBOQS_INFO=liboqs${LIBOQS_BRANCH}
@@ -187,15 +194,6 @@ plot_graph_asymmetric () {
         else
             "${ARR_PLOT_SCRIPT[@]}" -o "./${GRA_DIR}/oqs_kem_all.png" "${ARR_OQS_KEM[@]}"
         fi
-        # plot with web data
-        # NOTE:
-        #   "TimeoutError: Navigation timeout" happens when some servers
-        #   where ./data_from_web/with_webdata.sh retrieves data
-        #   do not respond.
-        #   Retry the same script after a while
-        #   or after commenting out the following line
-        #   if the necessity of the data is low:
-        (cd "${GRA_DIR}" && { ${PLOT_WITH_WEB_DATA} || true;})  # void exit by set -e
     fi
 
     # PQC selections
@@ -264,6 +262,18 @@ plot_graph_asymmetric () {
         # bikel1 bikel3 bikel5 \
         # hqc128 hqc192 hqc256
 # COMMENT_EOF
+
+    if [ -n "${LIBOQS_VER}" ]; then
+        # plot with web data
+        # NOTE:
+        #   "TimeoutError: Navigation timeout" happens when some servers
+        #   where ./data_from_web/with_webdata.sh retrieves data
+        #   do not respond.
+        #   Retry the same script after a while
+        #   or after commenting out the following line
+        #   if the necessity of the data is low:
+        (cd "${GRA_DIR}" && { ${PLOT_WITH_WEB_DATA} || true;})  # void exit by set -e
+    fi
 
     # comparison among mldsa's and mlkem's
     if [ -s "./${GRA_DIR}/${OQS_SIG_SEL_DAT}" ] && [ -s "./${GRA_DIR}/${OQS_KEM_SEL_DAT}" ] ; then
@@ -615,7 +625,7 @@ plot_graphs () {
     # TODO: Run once for OPENSSL_VER_NOSPACE
     #       Not necessary after set_openssl_in_path().
     if [ -z "${OPENSSL_VER_NOSPACE}" ]; then
-        # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+        # OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | "${GNU_PREF}"awk '{print $1 $2}')"
         openssl_ver_nospace_from_command
         echo "OPENSSL_VER_NOSPACE: ${OPENSSL_VER_NOSPACE}"
     fi
@@ -710,20 +720,20 @@ build_liboqs () {
 set_with_oqsprovider () {
     echo
     echo "--- ${openssl_type} ---"
-    OQSPROVIDER_DIR=${openssl_type}
-    # if false ; then
+    OQSPROVIDER_DIR=${DEBUG_DIR_PREF}${openssl_type}
+    openssl_type_to_oqs_branches
     if [ -d "${OQSPROVIDER_DIR}" ]; then
         echo
         echo "Notice: '${OQSPROVIDER_DIR}' dir already exists."
         echo "  Move or remove it to renew the contents."
     else
-        openssl_type_to_oqs_branches
         ${GIT_CLONE} https://github.com/open-quantum-safe/oqs-provider.git -b "${OQSPROVIDER_BRANCH}" --depth 1 "${OQSPROVIDER_DIR}"
     fi
     pushd "$(pwd)" || exit 2  # ./${TMP_DIR}
     cd "${OQSPROVIDER_DIR}" || exit 2;
     # in ${OQSPROVIDER_DIR}
-        OPENSSL_APP=$(pwd)/openssl/apps/openssl
+        # OPENSSL_APP=$(pwd)/openssl/apps/openssl
+        OPENSSL_APP=./openssl/apps/openssl
         OPENSSL_CONF=$(pwd)/scripts/openssl-ca.cnf
         OPENSSL_MODULES=$(pwd)/_build/lib
         if [ -s "${OPENSSL_APP}" ] && [ -s "${OPENSSL_CONF}" ] && [ -d "${OPENSSL_MODULES}" ]; then
@@ -742,7 +752,9 @@ set_with_oqsprovider () {
             fi
             # can comment out the next sed command if git protocol is allowed in your network
             sed -i".org" 's/git:\/\/git.openssl.org/https:\/\/github.com\/openssl/' scripts/fullbuild.sh
-            export OPENSSL_BRANCH LIBOQS_BRANCH
+            # export OPENSSL_BRANCH LIBOQS_BRANCH
+            # shellcheck disable=SC2034  # OSSL_CONFIG is used in ". ./scripts/fullbuild.sh"
+            OSSL_CONFIG="${ENABLE_FIPS} ${OSSL_CONFIG_COMMON}"
             set +e
             # TODO:
             #   - Make fullbuild.sh "set -e" compatible.
@@ -767,9 +779,55 @@ set_with_oqsprovider () {
             LD_LIBRARY_PATH=$(pwd)/.local/lib64
             export LD_LIBRARY_PATH
         fi
-        OPENSSL=${OPENSSL_APP}
+        if [ -z "${ENABLE_FIPS}" ]; then
+            OPENSSL="${OPENSSL_APP}"
+        else
+            OPENSSL="./openssl/util/wrap.pl -fips ${OPENSSL_APP}"
+            if [ ! -s "${OPENSSL_MODULES}/fips.$SO" ]; then
+                cp -p "./openssl/providers/fips.$SO" "${OPENSSL_MODULES}/."
+            fi
+            # check if fips-setting is in openssl-ca.cnf
+            if awk '$1 == ".include" && $2 ~ /fipsmodule.cnf$/ { exit 1 }' "$OPENSSL_CONF"; then
+                # not included (awk command succeeded with exit 0) and add fips-settings
+                sed -i".org" \
+                    -e '/^\# \.include fipsmodule\.cnf/a .include fipsmodule.cnf'\
+                    -e '/^providers = provider_sect/a alg_section = algorithm_sect\n\n[algorithm_sect]\ndefault_properties = ?fips=yes  # fips and more'\
+                    -e '/^\[provider_sect\]/a base = base_sect\nfips = fips_sect  # shall be before oqs'\
+                    -e 's/^\[default_sect\]/[base_sect]\nactivate = 1\n\n[default_sect]/'\
+                 "$OPENSSL_CONF"
+                 # NOTE:
+                 #   As of the combination of oqsprovider 0.12.0-dev (0.12.0-dev)
+                 #   and liboqs 0.16.0, PQC's in the oqsprovider require DRBG
+                 #   in a default provider; otherwise, they fail with
+                 #   "No OpenSSL randomness retrieved. DRBG available?"
+                 #
+                 #   To disable the default provider (after this dependency is removed),
+                 #   restore $OPENSSL_CONF,
+                 #   add the following option to the above sed command, and run this script again:
+                 #   -e 's/^default =/# default =/'\
+            fi
+        fi
         # ${OPENSSL} is available after setting
         OPENSSL_VER=$(${OPENSSL} version)
+:<<'# COMMENT_EOF'
+        # for debug
+        echo $OPENSSL_CONF
+        echo $OPENSSL_MODULES
+        ${OPENSSL} version -d
+        # export OPENSSL_RAND_SEED="($pwd)/random_seed.bin"
+        echo "${OPENSSL_VER}"
+        ${OPENSSL} list -providers
+        ${OPENSSL} list -random-generators
+        # oqsprovider
+        ${OPENSSL} speed -seconds 1 frodo1344shake
+        # fips (and base) providers
+        ${OPENSSL} speed -seconds 1 ML-KEM-512
+        ${OPENSSL} speed -seconds 1 sha256
+        # shall fail for fips (and base) providers
+        ${OPENSSL} speed -seconds 1 rsa1024
+        ${OPENSSL} speed -seconds 1 md5
+        echo "${OPENSSL}"
+# COMMENT_EOF
     #    plot_graphs
     # popd || exit 2  # ./${TMP_DIR}
 }
@@ -782,7 +840,8 @@ set_openssl_in_path () {
     # `openssl version` shall run first to determine the folder name
     OPENSSL_VER=$(${OPENSSL} version)
     # TODO: run once for OPENSSL_VER_NOSPACE
-    OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | awk '{print $1 $2}')"
+    # shellcheck disable=SC2016  # awk's variables
+    OPENSSL_VER_NOSPACE="$(echo "${OPENSSL_VER}" | "${GNU_PREF}"awk '{print $1 $2}')"
     # local tmp=${OPENSSL_VER#* }; openssl_ver_num_only=${tmp%% *}
     # openssl_in_path_dir="default_openssl_${openssl_ver_num_only}"
     openssl_in_path_dir="default_${OPENSSL_VER_NOSPACE}"
@@ -800,9 +859,9 @@ set_openssl_in_path () {
 
 
 set_openssl_tagged () {
-    openssl_type_dir="${openssl_type}"
+    openssl_type_dir="${DEBUG_DIR_PREF}${openssl_type}"
     if [ -n "${ENABLE_FIPS}" ]; then
-        # remove ${TAG_FIPS}
+        # remove ${TAG_FIPS} from ${openssl_type}
         openssl_type="${openssl_type: ${#TAG_FIPS}}"
     fi
     # whether "*${TAG_MINGW}" or not
@@ -913,12 +972,12 @@ set_openssl_tagged () {
                 # CONFIG_OPT="-fstack-protector-strong -fstack-clash-protection -fcf-protection"
                 # CONFIG_OPT="-fstack-protector-strong -fcf-protection"
                 # CONFIG_OPT=""
-                # CONFIG="./Configure --cross-compile-prefix=x86_64-w64-mingw32- mingw64 ${CONFIG_OPT}"
+                # CONFIG="./Configure ${OSSL_CONFIG_COMMON} --cross-compile-prefix=x86_64-w64-mingw32- mingw64 ${CONFIG_OPT}"
                 if [ -n "${ENABLE_FIPS+X}" ]; then
                     # CONFIG_OPT="-Wl,-rpath,$(pwd)/.local/lib64 ${CONFIG_OPT}"
                     CONFIG_OPT="--prefix=$(pwd)/.local/ ${CONFIG_OPT}"
                 fi
-                CONFIG="./Configure ${ENABLE_FIPS} --cross-compile-prefix=x86_64-w64-mingw32- mingw64 ${CONFIG_OPT}"
+                CONFIG="./Configure ${ENABLE_FIPS} ${OSSL_CONFIG_COMMON} --cross-compile-prefix=x86_64-w64-mingw32- mingw64 ${CONFIG_OPT}"
             else
                 # NOTE: some compilers might ignore -fstack-clash-protection in CONFIG_OPT.
                 #       Cf. hardening-check ./apps/openssl
@@ -929,17 +988,17 @@ set_openssl_tagged () {
                 # CONFIG_OPT=""
                 if [ -n "${ENABLE_FIPS+X}" ]; then
                     # Configure is a wrapper of config
-                    CONFIG="./Configure ${ENABLE_FIPS} ${CONFIG_OPT}"
+                    CONFIG="./Configure ${ENABLE_FIPS} ${OSSL_CONFIG_COMMON} ${CONFIG_OPT}"
                 else
                     # NOTE:
                     #   autoconf is for https://github.com/libressl/portable.git
                     #   but still causes the above NOTE's error.
                     [ ! -e "./configure" ] && [ -s "./configure.ac" ] && autoconf
                     if [ -s ./config ] ; then
-                        CONFIG="./config ${CONFIG_OPT}"
+                        CONFIG="./config ${OSSL_CONFIG_COMMON} ${CONFIG_OPT}"
                     else
                         # for libressl-2.*.* tar.gz and newer.
-                        CONFIG="./configure ${CONFIG_OPT}"
+                        CONFIG="./configure ${OSSL_CONFIG_COMMON} ${CONFIG_OPT}"
                         # NOTE:
                         #   LibreSSL at https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/
                         #   2.9.1, 3.0.0 and newer (including 3.3.6):
@@ -959,7 +1018,8 @@ set_openssl_tagged () {
                 fi
             fi
             ${CONFIG} || exit 2
-            make || exit 2
+            # shellcheck disable=SC2086  # to align with fullbuild.sh of oqsprovider
+            make $MAKE_PARAMS || exit 2
             # post process
             if [ "${EXE}" == ".exe" ]; then
                 local tmp
@@ -968,7 +1028,8 @@ set_openssl_tagged () {
                 cp -np ./providers/fips.dll ./.local/lib64/ossl-modules/.
                 cp -np ./providers/fipsmodule.cnf ./.local/ssl/.
                 # if not yet, add fips-setting to openssl.cnf
-                tmp=$(awk -v PWD="${PWD}" '{if (($1 ~ /^\.include$/) && ($2 == PWD"/.local/ssl/fipsmodule.cnf" )) print}' .local/ssl/openssl.cnf )
+                # shellcheck disable=SC2016  # awk's variables
+                tmp=$("${GNU_PREF}"awk -v PWD="${PWD}" '{if (($1 ~ /^\.include$/) && ($2 == PWD"/.local/ssl/fipsmodule.cnf" )) print}' .local/ssl/openssl.cnf )
                 # echo $tmp
                 if [ -z "${tmp}" ]; then
                     # # .include fipsmodule.cnf
@@ -985,8 +1046,8 @@ set_openssl_tagged () {
         fi
         if [ "${EXE}" == ".exe" ]; then
             if [ ! -e ./libssp-0.dll ]; then
-                # shellcheck disable=SC2016  # "$<number>" are not shell's variables but awk's.
-                MINGW_GCC_VER=$(/usr/bin/x86_64-w64-mingw32-gcc-posix --version | awk '$1 ~ /^x86_64-w64-mingw32-gcc-posix/ {print substr($3,1,index($3,"-")-1)}')
+                # shellcheck disable=SC2016  # awk's variables
+                MINGW_GCC_VER=$(/usr/bin/x86_64-w64-mingw32-gcc-posix --version | "${GNU_PREF}"awk '$1 ~ /^x86_64-w64-mingw32-gcc-posix/ {print substr($3,1,index($3,"-")-1)}')
                 cp -p  "/usr/lib/gcc/x86_64-w64-mingw32/${MINGW_GCC_VER}-posix/libssp-0.dll" .
             fi
         else
@@ -1014,11 +1075,12 @@ set_openssl_tagged () {
 # SPEED_OPT=""  # default: 3s for symmetric, 10s for asymmetric
 ARR_SPEED_OPT=()  # default: 3s for symmetric, 10s for asymmetric
 RUN_MODE="${DEFAULT_RUN_MODE}"  # default
-while getopts 's:r:vh?' OPTION
+while getopts 's:r:dvh?' OPTION
 do
     case $OPTION in
         s) s_arg=${OPTARG};;  # openssl speed -seconds
         r) RUN_MODE=${OPTARG};;
+        d) OSSL_CONFIG_COMMON="enable-trace --debug"; DEBUG_DIR_PREF="debug_";;
         h) usage; exit 0;;
         v) echo " ${COMMAND} v${VER}"; exit 0;;
         *) echo "Use '-h' option for help!"; exit 1;;
@@ -1063,9 +1125,12 @@ cd "${TMP_DIR}/" || exit 2
         popd || exit 2   # return to ./${TMP_DIR}
     else
         # multiple openssl_type's
+        # NOTE: MAKE_PARAMS and OSSL_CONFIG are used in fullbuild.sh of oqsprovider as well.
+        # export MAKE_PARAMS="-j$((NUM_PROC - 1))"
+        MAKE_PARAMS="-j$((NUM_PROC - 1))"
         for openssl_type in "$@"; do
             # printenv
-            unset ENABLE_FIPS OPENSSL_VER OPENSSL_VER_NOSPACE LIBOQS_VER EXE
+            unset OSSL_CONFIG ENABLE_FIPS OPENSSL_VER OPENSSL_VER_NOSPACE LIBOQS_VER EXE
             unset LD_LIBRARY_PATH DYLD_LIBRARY_PATH
             # unset variables set by set_with_oqsprovider
             unset OPENSSL_CONF OPENSSL_MODULES OPENSSL_APP
@@ -1083,10 +1148,11 @@ cd "${TMP_DIR}/" || exit 2
                 # if [[ "${openssl_type,,}" == "${TAG_FIPS,,}"* ]]; then
                 if [[ "${openssl_type}" == "${TAG_FIPS}"* ]]; then
                     # if [[ "${openssl_type,,}" == *"oqsprovider"* ]] || [[ "${openssl_type,,}" == *"libressl"* ]]; then
-                    if [[ "${openssl_type}" == *"oqsprovider"* ]] || [[ "${openssl_type}" == *"libressl"* ]]; then
+                    # if [[ "${openssl_type}" == *"oqsprovider"* ]] || [[ "${openssl_type}" == *"libressl"* ]]; then
+                    if [[ "${openssl_type}" == *"libressl"* ]]; then
                         echo
                         echo "Error: remove '${openssl_type: 0: ${#TAG_FIPS}}' from '${openssl_type}'!" >&2
-                        echo "  'enable-fips' is not either tested or supported."
+                        echo "  'enable-fips' is not tested or unsupported."
                         echo
                         exit 2
                     fi
@@ -1098,7 +1164,7 @@ cd "${TMP_DIR}/" || exit 2
                     if [[ "${openssl_type}" == *"${TAG_MINGW}" ]]; then
                         echo
                         echo "Error: remove '${openssl_type: -${#TAG_MINGW}}' from '${openssl_type}'!" >&2
-                        echo "  'oqsprovider' for MinGW is not tested or supported."
+                        echo "  'oqsprovider' for MinGW is not tested or unsupported."
                         echo
                         exit 2
                         # echo "       Skipped this openssl_type!"
@@ -1127,7 +1193,7 @@ else
         if [ "$openssl_type" == "openssl" ]; then
             openssl_type="${openssl_in_path_dir}"
         fi
-        echo "  ${TMP_DIR}/${openssl_type}/${GRA_DIR}/"
+        echo "  ${TMP_DIR}/${DEBUG_DIR_PREF}${openssl_type}/${GRA_DIR}/"
     done
 fi
 echo
